@@ -170,6 +170,7 @@ body.wide .top, body.wide .app { max-width: 1040px; }
 .today-text { flex: 1; min-width: 0; }
 .today-date {
   margin: 2px 0 0;
+  word-break: keep-all;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(28px, 6vw, 38px);
@@ -296,7 +297,7 @@ body.wide .top, body.wide .app { max-width: 1040px; }
   text-align: center; padding: 48px 16px 24px; color: var(--muted);
 }
 .empty svg { width: 64px; height: 64px; margin: 0 auto 12px; color: var(--accent); opacity: .7; }
-.empty p { margin: 0; font-size: 15px; text-wrap: balance; }
+.empty p { margin: 0; font-size: 15px; word-break: keep-all; overflow-wrap: anywhere; }
 .empty small { display: block; margin-top: 6px; font-size: 13px; }
 
 /* ---------- わける（4象限） ---------- */
@@ -505,7 +506,7 @@ dialog::backdrop { background: rgba(20, 24, 40, .35); backdrop-filter: blur(2px)
 .finale[open] .finale-body { animation: finale-in .6s var(--ease); }
 @keyframes finale-in { from { transform: translateY(16px) scale(.96); opacity: 0; } }
 .finale-mark { width: 48px; height: 48px; color: var(--accent); margin-bottom: 4px; }
-.finale h3 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 22px; text-wrap: balance; line-height: 1.35; }
+.finale h3 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
 .finale p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
 
 /* ---------- 効果 ---------- */

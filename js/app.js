@@ -415,20 +415,14 @@
     if (view === 'list') renderList(); else renderQuad();
   }
 
+  const ICON_REPEAT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l3 3-3 3M20 6H9a5 5 0 0 0-5 5M7 21l-3-3 3-3M4 18h11a5 5 0 0 0 5-5"/></svg>';
   function checkHtml(t) {
-    return `<button type="button" class="check ${t.repeat ? 'rep' : ''} ${t.done ? 'is-on' : ''}" data-act="toggle" data-q="${t.q}" aria-label="${t.done ? 'まだにする' : 'できた'}" aria-pressed="${t.done}">${ICON_CHECK}</button>`;
+    if (!t.repeat) return `<button type="button" class="check ${t.done ? 'is-on' : ''}" data-act="toggle" data-q="${t.q}" aria-label="${t.done ? 'まだにする' : 'できた'}" aria-pressed="${t.done}">${ICON_CHECK}</button>`;
+    // くりかえし：丸の中に回数。タップで 1 回増える。できたあとはチェック（タップで「まだ」に戻る）
+    const inner = t.done ? ICON_CHECK : (t.count ? `<b class="${t.count >= 10 ? 'two' : ''}">${t.count}</b>` : ICON_REPEAT);
+    return `<button type="button" class="check rep ${t.done ? 'is-on' : ''} ${t.count ? 'has-count' : ''}" data-act="toggle" data-q="${t.q}" aria-label="${t.done ? 'まだにする' : '1回できた'}">${inner}</button>`;
   }
-  /* くりかえしの回数：− 3回 +（できたあとは回数だけ） */
-  function stepperHtml(t) {
-    if (!t.repeat) return '';
-    if (t.done) return `<span class="rep-tag">${t.count || 0} 回</span>`;
-    return `
-      <span class="stepper" aria-label="回数">
-        <button type="button" data-act="dec" aria-label="1回もどす" ${t.count ? '' : 'disabled'}>−</button>
-        <b>${t.count || 0}</b><small>回</small>
-        <button type="button" data-act="inc" aria-label="1回できた">＋</button>
-      </span>`;
-  }
+  function repTag(t) { return t.repeat ? `<span class="rep-tag">${t.count ? `${t.count} 回` : 'くりかえし'}</span>` : ''; }
   function taskRow(t, i, arr) {
     const q = t.q ? `<span class="q-tag q${t.q}">${QUADS[t.q].name}</span>` : '';
     const order = t.done ? '' : `
@@ -439,10 +433,7 @@
     return `
       <li class="task ${t.done ? 'is-done' : ''} ${t.repeat ? 'is-rep' : ''}" data-id="${t.id}">
         ${checkHtml(t)}
-        <div class="mid">
-          <button type="button" class="title" data-act="edit">${esc(t.title)}${q}</button>
-          ${stepperHtml(t)}
-        </div>
+        <button type="button" class="title" data-act="edit">${esc(t.title)}${repTag(t)}${q}</button>
         ${order}
       </li>`;
   }
@@ -478,10 +469,7 @@
     return `
       <div class="card ${t.repeat ? 'is-rep' : ''}" data-id="${t.id}" draggable="true">
         ${checkHtml(t)}
-        <div class="mid">
-          <button type="button" class="title" data-act="edit">${esc(t.title)}</button>
-          ${stepperHtml(t)}
-        </div>
+        <button type="button" class="title" data-act="edit">${esc(t.title)}${repTag(t)}</button>
       </div>`;
   }
 
@@ -598,8 +586,7 @@
       toast(`${t.title}、${t.count} 回目。${t.count % 3 === 0 ? ' ' + REP_WORDS[Math.floor(Math.random() * REP_WORDS.length)] : ''}`);
       if (!reduceMotion() && el) { const r = el.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, 14, 3.5); }
     }
-    const st = el && el.closest('.stepper');
-    if (st) { st.classList.add('pop'); st.querySelector('b').textContent = t.count; }
+    if (el) { el.classList.add('pop', 'has-count'); el.innerHTML = `<b class="${t.count >= 10 ? 'two' : ''}">${t.count}</b>`; }
     setTimeout(render, 320);
   }
   function decRepeat(t) {
@@ -610,6 +597,7 @@
   function toggleDone(id, el) {
     const t = findTask(id);
     if (!t) return;
+    if (t.repeat && !t.done) { bumpRepeat(t, el); return; }
     t.done = !t.done;
     t.doneAt = t.done ? Date.now() : null;
     if (!t.done) {
@@ -1202,8 +1190,6 @@
     const id = holder.dataset.id;
     switch (actEl.dataset.act) {
       case 'toggle': toggleDone(id, actEl); break;
-      case 'inc': { const t = findTask(id); if (t && !t.done) bumpRepeat(t, actEl); break; }
-      case 'dec': { const t = findTask(id); if (t) decRepeat(t); break; }
       case 'edit': openTaskSheet(id); break;
       case 'up': move(id, -1); break;
       case 'down': move(id, 1); break;
@@ -1326,7 +1312,7 @@
     const card = e.target.closest && e.target.closest('.card');
     const row = e.target.closest && e.target.closest('#undoneList .task');
     const el = card || row;
-    if (!el || e.target.closest('.check') || e.target.closest('.order') || e.target.closest('.stepper')) return;
+    if (!el || e.target.closest('.check') || e.target.closest('.order')) return;
     if (card && e.pointerType === 'mouse') return;     // カードのマウス操作は標準のドラッグに任せる
     drag.kind = card ? 'card' : 'row'; drag.id = el.dataset.id; drag.el = el;
     drag.startX = e.clientX; drag.startY = e.clientY;

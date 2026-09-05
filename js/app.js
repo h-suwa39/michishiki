@@ -151,9 +151,9 @@
     $('#ringBar').style.strokeDashoffset = String(251.3 * (1 - ratio));
     let status;
     if (total === 0) status = 'まだ何も置いていません。';
-    else if (done === total) status = 'ぜんぶ歩きました。';
-    else if (done === 0) status = `${total} 件の道が待っています。`;
-    else status = `あと ${total - done} 件。`;
+    else if (done === total) status = 'きょうの分は、ぜんぶ歩きました。';
+    else if (done === 0) status = `${total} 件。ひとつずつで、だいじょうぶ。`;
+    else status = `あと ${total - done} 件。いい歩き方です。`;
     $('#todayStatus').textContent = status;
   }
 
@@ -189,8 +189,8 @@
     if (u.length === 0 && d.length === 0) {
       html = `
         <div class="empty">
-          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 26 C 10 18, 14 22, 17 15 S 24 8, 27 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="27" cy="6" r="2.4" fill="currentColor"/></svg>
-          <p>きょう歩く道を、ひとつ書いてみましょう。</p>
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M13 12 V 26.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M7 27 H 19" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M8 6.5 H 22 L 26.25 10.75 L 22 15 H 8 Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="10.75" r="1.6" fill="var(--bg)"/></svg>
+          <p>きょうのあなたがやることを、ひとつ書いてみましょう。</p>
           <small>下の欄に入れて、追加するだけ。順番はあとから並べかえられます。</small>
         </div>`;
     } else {

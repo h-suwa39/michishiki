@@ -223,6 +223,7 @@
   ];
 
   // ---------- 状態 ----------
+  let dayStartHour = 4;   // 1日の切りかわり時刻。state を読む前にも使うので先に持つ
   const defaultState = () => ({
     version: VERSION,
     date: todayKey(),
@@ -232,10 +233,11 @@
     sets: [],
     dictOff: DEFAULT_OFF(),
     household: { kidsOn: true, kids: [], partnerOn: false, partnerName: '', family: [], pets: [] },
-    settings: { theme: 'ai', appearance: 'system', celebrate: true, view: 'list' },
+    settings: { theme: 'ai', appearance: 'system', celebrate: true, view: 'list', dayStart: 4 },
   });
 
   let state = load();
+  dayStartHour = state.settings.dayStart;
   let carried = 0;          // 持ち越し件数（表示用、保存しない）
   let editingId = null;     // シートで編集中のタスク
   let pendingQ = 0;         // シートで選択中の象限
@@ -259,6 +261,7 @@
     if (!['system', 'light', 'dark'].includes(s.settings.appearance)) s.settings.appearance = 'system';
     if (!['list', 'quad'].includes(s.settings.view)) s.settings.view = 'list';
     s.settings.celebrate = s.settings.celebrate !== false;
+    s.settings.dayStart = Number.isInteger(s.settings.dayStart) && s.settings.dayStart >= 0 && s.settings.dayStart <= 23 ? s.settings.dayStart : 4;
     s.tasks = Array.isArray(s.tasks) ? s.tasks.filter(t => t && typeof t.title === 'string').map(t => ({
       id: String(t.id || uid()),
       title: t.title.slice(0, 120),
@@ -295,7 +298,11 @@
   }
   function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
 
-  function todayKey(d = new Date()) {
+  /* 切りかわり時刻（settings.dayStart 時）を過ぎるまでは前の日として扱う */
+  function appDate(now = new Date()) {
+    return new Date(now.getTime() - dayStartHour * 3600e3);
+  }
+  function todayKey(d = appDate()) {
     const p = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   }
@@ -320,7 +327,7 @@
   }
   /* きょうの曜日に合う自動セットを置く。すでにある言葉は重ねない */
   function applySetsForToday() {
-    const dow = new Date().getDay();
+    const dow = appDate().getDay();
     const names = []; let count = 0;
     state.sets.filter(st => st.auto && st.days.includes(dow)).forEach(st => {
       const n = placeSet(st, false);
@@ -374,9 +381,10 @@
   }
 
   function renderToday() {
-    const d = new Date();
+    const d = appDate();
     const days = ['日', '月', '火', '水', '木', '金', '土'];
-    $('#todayDate').innerHTML = `${d.getMonth() + 1}月${d.getDate()}日<small>${days[d.getDay()]}曜日</small>`;
+    const late = new Date().getDate() !== d.getDate();   // 切りかわり前の深夜
+    $('#todayDate').innerHTML = `${d.getMonth() + 1}月${d.getDate()}日<small>${days[d.getDay()]}曜日${late ? '・まだきょう' : ''}</small>`;
     const core = state.tasks.filter(t => !t.repeat);
     const reps = state.tasks.filter(t => t.repeat);
     const repCount = reps.reduce((a, t) => a + (t.count || 0), 0);
@@ -812,6 +820,7 @@
       if (!obj || !Array.isArray(obj.tasks)) throw new Error('shape');
       if (state.tasks.length && !(await ask({ title: '読み込んだ内容で置きかえますか？', text: 'いまの端末にあるデータは、読み込んだファイルの内容に置きかわります。', ok: '置きかえる', danger: true }))) return;
       state = normalize(obj);
+      dayStartHour = state.settings.dayStart;
       save(); applyTheme(); rollover(); render(); paintSettings();
       toast(`${state.tasks.length} 件を読み込みました。`);
     } catch (err) {
@@ -914,6 +923,7 @@
   }
   function paintHousehold() {
     const h = state.household;
+    $$('#dayStartPicker .chip').forEach(c => c.setAttribute('aria-pressed', String(Number(c.dataset.h) === state.settings.dayStart)));
     $$('#kidsToggle .chip').forEach(c => c.setAttribute('aria-pressed', String((c.dataset.on === 'on') === h.kidsOn)));
     $('#kidsNames').innerHTML = h.kidsOn ? nameListHtml('kids', h.kids, 'こどもの名前') : '';
     $$('#partnerToggle .chip').forEach(c => c.setAttribute('aria-pressed', String((c.dataset.on === 'on') === h.partnerOn)));
@@ -926,6 +936,13 @@
     $('#petNames').innerHTML = nameListHtml('pets', h.pets, 'ペットの名前');
   }
   function householdChanged() { save(); renderSuggest(); paintHousehold(); }
+  $('#dayStartPicker').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    state.settings.dayStart = Number(b.dataset.h); dayStartHour = state.settings.dayStart;
+    save(); paintHousehold();
+    rollover(); render();   // 切りかわり時刻が変わると「きょう」が変わることがある
+    toast(`${state.settings.dayStart} 時で切りかわるようにしました。`);
+  });
   $('#kidsToggle').addEventListener('click', e => {
     const b = e.target.closest('.chip'); if (!b) return;
     state.household.kidsOn = b.dataset.on === 'on'; householdChanged();
@@ -981,7 +998,7 @@
     setsSheet.showModal();
   }
   function daysHtml(days, attr) {
-    const today = new Date().getDay();
+    const today = appDate().getDay();
     return `<div class="days" ${attr || ''}>${DAY_NAMES.map((n, i) => `<button type="button" class="day ${i === today ? 'is-today' : ''}" data-day="${i}" aria-pressed="${days.includes(i)}" aria-label="${n}曜日">${n}</button>`).join('')}</div>`;
   }
   function paintSets() {
@@ -1456,6 +1473,7 @@
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') { rollover(); render(); }
   });
+  setInterval(() => { if (state.date !== todayKey()) { rollover(); render(); } }, 60 * 1000);
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     addEventListener('load', () => {

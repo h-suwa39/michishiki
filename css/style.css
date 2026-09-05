@@ -578,13 +578,14 @@ dialog::backdrop { background: rgba(20, 24, 40, .35); backdrop-filter: blur(2px)
 }
 .finale::backdrop { background: rgba(20, 24, 40, .45); backdrop-filter: blur(3px); }
 .finale-body {
-  background: var(--panel); border-radius: var(--radius-l); padding: 34px 28px 26px; text-align: center;
+  background: var(--panel); border-radius: var(--radius-l); padding: 32px 22px 24px; text-align: center;
   display: grid; gap: 8px; justify-items: center; box-shadow: var(--shadow);
 }
 .finale[open] .finale-body { animation: finale-in .6s var(--ease); }
 @keyframes finale-in { from { transform: translateY(16px) scale(.96); opacity: 0; } }
 .finale-mark { width: 48px; height: 48px; color: var(--accent); margin-bottom: 4px; }
-.finale h3 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
+.finale h3 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 21px; line-height: 1.45; letter-spacing: .01em; }
+.ph { display: inline-block; white-space: nowrap; }
 .finale p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
 
 /* ---------- 効果 ---------- */

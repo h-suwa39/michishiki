@@ -624,7 +624,7 @@
   const settingsSheet = $('#settingsSheet');
   let settingsTab = 'color';
   function openSettings(tab) {
-    if (tab) settingsTab = tab;
+    if (typeof tab === 'string') settingsTab = tab;   // ボタンから直接呼ばれるとイベントが渡ってくるので文字列だけ受ける
     paintSettings(); settingsSheet.showModal();
   }
   function paintTabs() {
@@ -1286,6 +1286,25 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
   }
+
+
+  // ---------- 見えている範囲に合わせる ----------
+  // iOS の Chrome などはブラウザのツールバーがページに重なり、下に固定したものが隠れる。
+  // Visual Viewport で「実際に見えている下端」との差を測り、その分だけ入力欄・シート・トーストを持ち上げる。
+  // キーボードが出たときも、入力欄がキーボードの上に乗る。
+  function syncViewport() {
+    const vv = window.visualViewport;
+    let hidden = 0;
+    if (vv) hidden = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    document.documentElement.style.setProperty('--vv-bottom', hidden + 'px');
+  }
+  if (window.visualViewport) {
+    visualViewport.addEventListener('resize', syncViewport);
+    visualViewport.addEventListener('scroll', syncViewport);
+  }
+  addEventListener('resize', syncViewport);
+  addEventListener('orientationchange', () => setTimeout(syncViewport, 300));
+  syncViewport();
 
   // ---------- 起動 ----------
   applyTheme();

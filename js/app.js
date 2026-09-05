@@ -89,6 +89,16 @@
     W('学校のプリント確認', 'yoru', 'kodomo', 'tetsuzuki'),
     W('{こども}の予防接種の予約', 'tokidoki', 'kodomo', 'tetsuzuki', { fb: '予防接種の予約' }),
     W('{こども}の爪を切る', 'tokidoki', 'kodomo', { fb: '爪を切る' }),
+    // 必要な人だけ ON にする言葉（最初は OFF）
+    W('{こども}の通院', 'tokidoki', 'kodomo', 'odekake', { fb: 'こどもの通院', off: true }),
+    W('{こども}の薬をのませる', 'asa', 'yoru', 'kodomo', { fb: 'こどもの薬', off: true }),
+    W('幼稚園の送り', 'asa', 'kodomo', 'odekake', { off: true }),
+    W('幼稚園のお迎え', 'hiru', 'kodomo', 'odekake', { off: true }),
+    W('学童のお迎え', 'yoru', 'kodomo', 'odekake', { off: true }),
+    W('{こども}の宿題を見る', 'yoru', 'kodomo', { fb: '宿題を見る', off: true }),
+    W('おもちゃの片づけ', 'yoru', 'kodomo', 'ouchi', { off: true }),
+    W('離乳食のストック作り', 'tokidoki', 'gohan', 'kodomo', { off: true }),
+    W('保護者会・PTA', 'tokidoki', 'kodomo', 'tetsuzuki', { off: true }),
     // かぞく・ペット（設定で「いる」にしたときだけ出る）
     W('{パートナー}のお弁当', 'asa', 'gohan', 'kazoku'),
     W('{パートナー}に予定を伝える', 'yoru', 'kazoku', 'tetsuzuki'),
@@ -99,6 +109,8 @@
     W('{かぞく}のごはん', 'hiru', 'gohan', 'kazoku'),
     W('{かぞく}と話す', 'hiru', 'kazoku'),
     W('{かぞく}の通院の付き添い', 'tokidoki', 'kazoku', 'odekake'),
+    W('{かぞく}のデイサービスの送り出し', 'asa', 'kazoku', { off: true }),
+    W('{かぞく}の介護の手続き', 'tokidoki', 'kazoku', 'tetsuzuki', { off: true }),
     W('{ペット}のごはん', 'asa', 'yoru', 'kazoku', 'gohan'),
     W('{ペット}の水をかえる', 'asa', 'kazoku'),
     W('{ペット}の散歩', 'asa', 'yoru', 'kazoku', 'odekake'),
@@ -140,7 +152,11 @@
     W('役所の手続き', 'tokidoki', 'tetsuzuki', 'odekake'),
     W('支払い', 'tokidoki', 'tetsuzuki'),
     W('車にガソリンを入れる', 'tokidoki', 'odekake'),
+    W('在宅の仕事の時間', 'hiru', 'jibun', { off: true }),
+    W('資格の勉強', 'yoru', 'jibun', { off: true }),
+    W('通院', 'tokidoki', 'jibun', 'odekake', { off: true }),
   ];
+  const DEFAULT_OFF = () => DICTIONARY.filter(d => d.off).map(d => d.w);
 
   /* 役割を展開して、いま表示すべき言葉の一覧にする（自分で足した言葉も含む） */
   function expandWord(d, h) {
@@ -155,7 +171,9 @@
   function activeDictionary() {
     const h = state.household;
     const out = [];
+    const off = new Set(state.dictOff);
     DICTIONARY.concat(state.custom).forEach(d => {
+      if (!d.custom && off.has(d.w)) return;
       if (!h.kidsOn && d.tags.includes('kodomo')) return;
       expandWord(d, h).forEach(w => out.push({ w, tags: d.tags, custom: !!d.custom }));
     });
@@ -211,6 +229,7 @@
     recent: [],
     custom: [],
     sets: [],
+    dictOff: DEFAULT_OFF(),
     household: { kidsOn: true, kids: [], partnerOn: false, partnerName: '', family: [], pets: [] },
     settings: { theme: 'ai', appearance: 'system', celebrate: true, view: 'list' },
   });
@@ -259,6 +278,8 @@
       auto: x.auto !== false,
       tasks: (Array.isArray(x.tasks) ? x.tasks : []).filter(t => t && typeof t.title === 'string').map(t => ({ title: t.title.slice(0, 120), q: [1, 2, 3, 4].includes(t.q) ? t.q : 0 })).slice(0, 60),
     })).slice(0, 20) : [];
+    const known = new Set(DICTIONARY.map(d => d.w));
+    s.dictOff = Array.isArray(obj && obj.dictOff) ? obj.dictOff.filter(w => typeof w === 'string' && known.has(w)) : DEFAULT_OFF();
     const groupIds = new Set(DICT_GROUPS.map(g => g.id));
     s.custom = Array.isArray(s.custom) ? s.custom.filter(c => c && typeof c.w === 'string' && c.w.trim()).map(c => ({
       w: c.w.trim().slice(0, 60), tags: (Array.isArray(c.tags) ? c.tags : []).filter(t => groupIds.has(t)), custom: true,
@@ -437,7 +458,7 @@
     } else {
       html += `
         <div class="tray">
-          <div class="tray-head"><b>まだ分けていない</b><small>${unsorted.length ? 'タップして置き場所を選ぶ。PCならドラッグでも。' : 'すべて分けました。'}</small></div>
+          <div class="tray-head"><b>まだ分けていない</b><small>${unsorted.length ? 'タップで置き場所を選ぶ。長押しでつまんで動かすこともできます。' : 'すべて分けました。'}</small></div>
           ${unsorted.length ? `<div class="chips-row">${unsorted.map(cardHtml).join('')}</div>` : ''}
         </div>`;
     }
@@ -586,6 +607,7 @@
     paintTabs();
     paintHousehold();
     paintCustomList();
+    paintWordToggles();
     $('#themePicker').innerHTML = THEMES.map(t => `
       <button type="button" class="theme-opt" data-theme="${t.id}" aria-pressed="${state.settings.theme === t.id}">
         <span class="theme-swatch"><i style="background:${t.light[1]}"></i><i style="background:${t.dark[1]}"></i></span>
@@ -637,7 +659,7 @@
   });
   $('#clearBtn').addEventListener('click', () => {
     if (!confirm('きょうのやることをすべて消します。カラーテーマ・くらしのかたち・辞書は残ります。よいですか？')) return;
-    const keep = { settings: state.settings, household: state.household, custom: state.custom, sets: state.sets, recent: state.recent };
+    const keep = { settings: state.settings, household: state.household, custom: state.custom, sets: state.sets, recent: state.recent, dictOff: state.dictOff };
     state = Object.assign(defaultState(), keep);
     save(); render(); settingsSheet.close();
     toast('きょうのやることを、すべて消しました。');
@@ -667,6 +689,58 @@
     if (!confirm(`「${w}」を辞書から消しますか？`)) return;
     state.custom = state.custom.filter(c => c.w !== w);
     save(); renderSuggest(); paintCustomList();
+  });
+
+  /* 使うことばの ON/OFF。「なに」のグループごとに並べ、複数グループに属する言葉は最初のグループにだけ出す */
+  function displayName(d) {
+    const m = d.w.match(PH_RE);
+    if (!m) return d.w;
+    const role = ROLES[m[1]];
+    const names = role.names(state.household);
+    if (names.length) return d.w.replace(m[0], names[0]) + (names.length > 1 ? ' …' : '');
+    return d.fb || d.w.replace(m[0], role.generic());
+  }
+  const openGroups = new Set();
+  function paintWordToggles() {
+    const off = new Set(state.dictOff);
+    const placed = new Set();
+    const html = DICT_SCENE.map(g => {
+      const words = DICTIONARY.filter(d => d.tags.includes(g.id) && !placed.has(d.w));
+      words.forEach(d => placed.add(d.w));
+      if (!words.length) return '';
+      const onCount = words.filter(d => !off.has(d.w)).length;
+      return `
+        <details class="wt-group" data-group="${g.id}" ${openGroups.has(g.id) ? 'open' : ''}>
+          <summary><span>${g.name}</span><small>${onCount} / ${words.length}</small></summary>
+          <div class="wt-tools">
+            <button type="button" class="text-btn" data-all="on">すべて使う</button>
+            <button type="button" class="text-btn" data-all="off">すべて使わない</button>
+          </div>
+          <div class="chips">${words.map(d => `<button type="button" class="chip small wt" data-w="${esc(d.w)}" aria-pressed="${!off.has(d.w)}">${esc(displayName(d))}</button>`).join('')}</div>
+        </details>`;
+    }).join('');
+    $('#wordToggles').innerHTML = html;
+  }
+  $('#wordToggles').addEventListener('toggle', e => {
+    const g = e.target.closest('.wt-group'); if (!g) return;
+    if (g.open) openGroups.add(g.dataset.group); else openGroups.delete(g.dataset.group);
+  }, true);
+  $('#wordToggles').addEventListener('click', e => {
+    const all = e.target.closest('[data-all]');
+    if (all) {
+      const g = all.closest('.wt-group');
+      const words = Array.from(g.querySelectorAll('.wt')).map(b => b.dataset.w);
+      const off = new Set(state.dictOff);
+      words.forEach(w => all.dataset.all === 'on' ? off.delete(w) : off.add(w));
+      state.dictOff = Array.from(off);
+      save(); renderSuggest(); paintWordToggles(); return;
+    }
+    const b = e.target.closest('.wt'); if (!b) return;
+    const w = b.dataset.w;
+    const off = new Set(state.dictOff);
+    if (off.has(w)) off.delete(w); else off.add(w);
+    state.dictOff = Array.from(off);
+    save(); renderSuggest(); paintWordToggles();
   });
 
   // ---------- くらしのかたち ----------
@@ -1000,6 +1074,68 @@
     setQuadrant(dragId, zone.classList.contains('quad') ? Number(zone.dataset.q) : 0);
     dragId = null;
   });
+
+
+  // タッチ（とペン）のドラッグ。長押しでつまみ上げ、指の下の象限に置く
+  const touchDrag = { id: null, timer: 0, startX: 0, startY: 0, ghost: null, active: false, card: null };
+  function tdCancelTimer() { clearTimeout(touchDrag.timer); touchDrag.timer = 0; }
+  function tdTarget(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return el && (el.closest('.quad') || el.closest('.tray'));
+  }
+  function tdHighlight(zone) {
+    $$('.quad.is-over').forEach(q => q.classList.remove('is-over'));
+    if (zone && zone.classList.contains('quad')) zone.classList.add('is-over');
+  }
+  function tdEnd(drop, x, y) {
+    tdCancelTimer();
+    if (touchDrag.card) touchDrag.card.classList.remove('lifting', 'dragging');
+    if (touchDrag.ghost) { touchDrag.ghost.remove(); touchDrag.ghost = null; }
+    tdHighlight(null);
+    if (touchDrag.active && drop) {
+      const zone = tdTarget(x, y);
+      if (zone) setQuadrant(touchDrag.id, zone.classList.contains('quad') ? Number(zone.dataset.q) : 0);
+    }
+    touchDrag.active = false; touchDrag.id = null; touchDrag.card = null;
+  }
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') return;               // マウスは標準のドラッグを使う
+    const card = e.target.closest && e.target.closest('.card');
+    if (!card || e.target.closest('.check')) return;
+    touchDrag.id = card.dataset.id; touchDrag.card = card;
+    touchDrag.startX = e.clientX; touchDrag.startY = e.clientY;
+    tdCancelTimer();
+    touchDrag.timer = setTimeout(() => {
+      touchDrag.active = true;
+      card.classList.add('dragging');
+      const r = card.getBoundingClientRect();
+      const g = card.cloneNode(true);
+      g.className = 'card drag-ghost';
+      g.style.width = r.width + 'px';
+      g.style.left = r.left + 'px'; g.style.top = r.top + 'px';
+      document.body.appendChild(g);
+      touchDrag.ghost = g;
+      touchDrag.offX = e.clientX - r.left; touchDrag.offY = e.clientY - r.top;
+      if (navigator.vibrate) navigator.vibrate(10);
+    }, 260);
+    card.classList.add('lifting');
+  });
+  document.addEventListener('pointermove', e => {
+    if (!touchDrag.id) return;
+    if (!touchDrag.active) {
+      // 長押し前に動いたらスクロールとみなす
+      if (Math.hypot(e.clientX - touchDrag.startX, e.clientY - touchDrag.startY) > 8) tdEnd(false);
+      return;
+    }
+    touchDrag.ghost.style.left = (e.clientX - touchDrag.offX) + 'px';
+    touchDrag.ghost.style.top = (e.clientY - touchDrag.offY) + 'px';
+    tdHighlight(tdTarget(e.clientX, e.clientY));
+  });
+  document.addEventListener('pointerup', e => { if (touchDrag.id) tdEnd(true, e.clientX, e.clientY); });
+  document.addEventListener('pointercancel', () => { if (touchDrag.id) tdEnd(false); });
+  // ドラッグ中は画面のスクロールを止める。長押しメニューも出さない
+  document.addEventListener('touchmove', e => { if (touchDrag.active) e.preventDefault(); }, { passive: false });
+  document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.card')) e.preventDefault(); });
 
   // ---------- 演出 ----------
   const fx = $('#fx');

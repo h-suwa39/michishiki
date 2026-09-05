@@ -346,7 +346,14 @@ body.wide .top, body.wide .app { max-width: 1040px; }
 }
 .tray .card { background: var(--panel); }
 .card:hover { border-color: var(--border); }
-.card.dragging { opacity: .5; }
+.card.dragging { opacity: .35; }
+.card.lifting { transform: scale(.98); }
+.card { touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.drag-ghost {
+  position: fixed; z-index: 60; pointer-events: none; margin: 0;
+  background: var(--panel); border-color: var(--accent); box-shadow: var(--shadow), 0 14px 30px -12px rgba(0,0,0,.45);
+  transform: scale(1.04) rotate(-1deg); opacity: .96;
+}
 .card .check { width: 24px; height: 24px; }
 .card .check svg { width: 13px; height: 13px; }
 .card .title { font-size: 14px; padding: 2px 4px; }
@@ -470,6 +477,24 @@ body.wide .top, body.wide .app { max-width: 1040px; }
 .custom-item b { font-weight: 600; font-size: 14px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .custom-item .tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .custom-item .tag { font-size: 11px; color: var(--muted); background: var(--panel-2); border-radius: 999px; padding: 1px 8px; }
+
+/* 使うことばの ON/OFF */
+.wt-group { border: 1px solid var(--border); border-radius: var(--radius-m); background: var(--bg); }
+.wt-group + .wt-group { margin-top: 6px; }
+.wt-group summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 10px 12px; font-size: 14px; font-weight: 600;
+}
+.wt-group summary::-webkit-details-marker { display: none; }
+.wt-group summary small { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 500; }
+.wt-group summary::after { content: "▾"; color: var(--muted); font-size: 12px; margin-left: 4px; transition: transform .2s; }
+.wt-group[open] summary::after { transform: rotate(180deg); }
+.wt-group .wt-tools { display: flex; gap: 2px; padding: 0 8px 4px; }
+.wt-group .chips { padding: 4px 12px 12px; }
+.chip.wt { background: var(--panel); }
+.chip.wt[aria-pressed="true"] { border-color: var(--border); background: var(--panel); color: var(--text); font-weight: 500; }
+.chip.wt[aria-pressed="false"] { opacity: .45; text-decoration: line-through; text-decoration-color: var(--muted); border-style: dashed; }
+.chip.wt[aria-pressed="false"]:hover { opacity: .8; }
 
 /* くらしのかたち */
 .hh-block { display: grid; gap: 8px; padding: 10px 0; border-top: 1px dashed var(--border); }

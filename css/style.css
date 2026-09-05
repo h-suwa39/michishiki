@@ -369,9 +369,30 @@ body.wide .top, body.wide .app { max-width: 1040px; }
   position: fixed; left: 0; right: 0; bottom: var(--vv-bottom); z-index: 5;
   padding: 10px 20px calc(14px + env(safe-area-inset-bottom));
   background: linear-gradient(to top, var(--bg) 70%, transparent);
-  display: flex; justify-content: center;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
   transition: bottom .15s ease-out;
 }
+/* 候補のことば（入力欄の上に横に並ぶ） */
+.suggest { width: min(100%, 680px); }
+body.wide .suggest { width: min(100%, 1000px); }
+.suggest-row {
+  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 4px 2px 2px;
+  -webkit-overflow-scrolling: touch;
+}
+.suggest-row::-webkit-scrollbar { display: none; }
+.sug {
+  flex: none; padding: 8px 14px; border-radius: 999px; font-size: 14px;
+  background: var(--panel); border: 1px solid var(--border); box-shadow: var(--shadow);
+  transition: border-color .2s, transform .15s var(--ease);
+  animation: sug-in .25s var(--ease) backwards;
+}
+.sug:hover { border-color: var(--accent); }
+.sug:active { transform: scale(.97); }
+.sug.mine { border-style: dashed; }
+.sug.more { color: var(--accent-ink); font-weight: 600; background: var(--accent-soft); border-color: transparent; }
+.sug-label { flex: none; align-self: center; font-size: 11px; font-weight: 600; letter-spacing: .1em; color: var(--muted); padding: 0 4px 0 2px; }
+@keyframes sug-in { from { opacity: 0; transform: translateY(4px); } }
+.composer input::-webkit-calendar-picker-indicator { display: none !important; }
 .composer-inner { position: relative; width: min(100%, 680px); }
 body.wide .composer-inner { width: min(100%, 1000px); }
 .composer input {
@@ -383,7 +404,6 @@ body.wide .composer-inner { width: min(100%, 1000px); }
 }
 .composer input::placeholder { color: var(--muted); }
 .composer input:focus { border-color: var(--accent); outline: none; }
-.composer input::-webkit-calendar-picker-indicator { display: none !important; }
 .add-btn, .dict-btn {
   position: absolute; top: 6px; width: 42px; height: 42px; border-radius: 50%;
   display: grid; place-items: center; transition: transform .2s var(--ease), background-color .2s, color .2s;

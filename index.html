@@ -84,12 +84,14 @@
 </main>
 
 <form class="composer" id="composer" autocomplete="off">
+  <div class="suggest" id="suggest" hidden>
+    <div class="suggest-row" id="suggestRow" role="listbox" aria-label="候補のことば"></div>
+  </div>
   <div class="composer-inner">
     <button type="button" class="dict-btn" id="dictBtn" aria-label="よく使うことばから選ぶ" title="よく使うことば">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/><path d="M9 7.5h7M9 11h5"/></svg>
     </button>
-    <input id="composerInput" type="text" maxlength="120" list="suggestList" placeholder="きょう、やることをひとつ" aria-label="やることを追加" enterkeyhint="done">
-    <datalist id="suggestList"></datalist>
+    <input id="composerInput" type="text" maxlength="120" placeholder="きょう、やることをひとつ" aria-label="やることを追加" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false">
     <button type="submit" class="add-btn" aria-label="追加">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
     </button>

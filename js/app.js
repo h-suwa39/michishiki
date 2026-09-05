@@ -493,12 +493,63 @@
   }
   const hasToday = title => state.tasks.some(t => t.title === title);
 
-  /* 入力欄の候補：自分が入れたことば → 辞書のことば */
-  function renderSuggest() {
+  /* いまの時間帯（あさ 4〜10時、ひる 10〜16時、よる それ以外） */
+  function timeBucket(h = new Date().getHours()) { return h >= 4 && h < 10 ? 'asa' : h >= 10 && h < 16 ? 'hiru' : 'yoru'; }
+
+  /* 入力欄の候補。空のときは時間帯に合う言葉と自分の言葉、打ち始めたら絞り込み。すでに置いたものは出さない */
+  const SUGGEST_MAX = 10;
+  function suggestions(query) {
+    const q = query.trim();
+    const placed = new Set(state.tasks.map(t => t.title));
     const seen = new Set();
-    const words = [];
-    state.recent.concat(activeDictionary().map(d => d.w)).forEach(w => { if (!seen.has(w)) { seen.add(w); words.push(w); } });
-    $('#suggestList').innerHTML = words.slice(0, 80).map(w => `<option value="${esc(w)}"></option>`).join('');
+    const out = [];
+    const push = (w, mine) => { if (!seen.has(w) && !placed.has(w) && out.length < SUGGEST_MAX) { seen.add(w); out.push({ w, mine: !!mine }); } };
+    const dict = activeDictionary();
+    if (q) {
+      state.recent.filter(w => w.includes(q)).forEach(w => push(w, true));
+      dict.filter(d => d.w.includes(q)).forEach(d => push(d.w));
+    } else {
+      state.recent.slice(0, 4).forEach(w => push(w, true));
+      const tb = timeBucket();
+      dict.filter(d => d.tags.includes(tb)).forEach(d => push(d.w));
+      dict.forEach(d => push(d.w));
+    }
+    return out;
+  }
+  let suggestOpen = false;
+  function paintSuggest() {
+    const input = $('#composerInput');
+    const q = input.value;
+    const list = suggestions(q);
+    const label = q.trim() ? '' : `<span class="sug-label">${{ asa: 'あさの', hiru: 'ひるの', yoru: 'よるの' }[timeBucket()]}おすすめ</span>`;
+    $('#suggestRow').innerHTML = label
+      + list.map(x => `<button type="button" class="sug ${x.mine ? 'mine' : ''}" role="option" data-w="${esc(x.w)}">${esc(x.w)}</button>`).join('')
+      + `<button type="button" class="sug more" data-more="1">${q.trim() && !list.length ? 'Enter で追加' : 'もっと…'}</button>`;
+    $('#suggestRow').scrollLeft = 0;
+  }
+  function showSuggest() { suggestOpen = true; paintSuggest(); $('#suggest').hidden = false; }
+  function hideSuggest() { suggestOpen = false; $('#suggest').hidden = true; }
+  function renderSuggest() { if (suggestOpen) paintSuggest(); }
+
+  {
+    const input = $('#composerInput');
+    let keep = false;   // 候補をタップしている間はフォーカスを離さない
+    input.addEventListener('focus', showSuggest);
+    input.addEventListener('input', () => { if (!suggestOpen) showSuggest(); else paintSuggest(); });
+    input.addEventListener('blur', () => { if (!keep) setTimeout(() => { if (document.activeElement !== input) hideSuggest(); }, 120); });
+    input.addEventListener('keydown', e => { if (e.key === 'Escape') { hideSuggest(); input.blur(); } });
+    $('#suggest').addEventListener('pointerdown', e => { keep = true; e.preventDefault(); });   // フォーカスを奪わない
+    $('#suggest').addEventListener('pointerup', () => { setTimeout(() => { keep = false; }, 0); });
+    $('#suggest').addEventListener('click', e => {
+      const more = e.target.closest('[data-more]');
+      if (more) { hideSuggest(); input.blur(); openDict(); return; }
+      const b = e.target.closest('.sug[data-w]'); if (!b) return;
+      const w = b.dataset.w;
+      addTask(w);
+      input.value = '';
+      paintSuggest();
+      toast(`「${w}」を置きました。`);
+    });
   }
   function findTask(id) { return state.tasks.find(t => t.id === id); }
 
@@ -949,7 +1000,7 @@
   const dictSheet = $('#dictSheet');
   const dictSel = { mine: false, time: null, scene: null };
   function openDict() {
-    dictSel.mine = false; dictSel.time = null; dictSel.scene = null;
+    dictSel.mine = false; dictSel.time = timeBucket(); dictSel.scene = null;
     customTags = []; paintCustomTags();
     paintDict();
     dictSheet.showModal();

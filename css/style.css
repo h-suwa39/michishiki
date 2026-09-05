@@ -616,6 +616,24 @@ dialog::backdrop { background: rgba(20, 24, 40, .35); backdrop-filter: blur(2px)
 .ph { display: inline-block; white-space: nowrap; }
 .finale p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
 
+/* ---------- 確認カード ---------- */
+.ask { border: 0; padding: 0; background: transparent; max-width: 360px; width: calc(100% - 48px); }
+.ask::backdrop { background: rgba(20, 24, 40, .4); backdrop-filter: blur(2px); }
+.ask-body {
+  background: var(--panel); border-radius: var(--radius-l); padding: 22px 20px 16px;
+  display: grid; gap: 8px; box-shadow: var(--shadow);
+}
+.ask[open] .ask-body { animation: ask-in .25s var(--ease); }
+@keyframes ask-in { from { transform: translateY(8px) scale(.98); opacity: 0; } }
+.ask-title { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere; }
+.ask-text { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.ask-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }
+.danger-fill-btn {
+  background: var(--q1); color: #fff; font-weight: 600; padding: 10px 20px; border-radius: 999px;
+  transition: filter .2s;
+}
+.danger-fill-btn:hover { filter: brightness(1.05); }
+
 /* ---------- 効果 ---------- */
 #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
 .toast {

@@ -555,6 +555,36 @@
     save(); render();
   }
 
+
+  // ---------- 確認カード（ブラウザ標準の confirm の代わり） ----------
+  // ask({ title, text, ok, cancel, danger }) → Promise<boolean>
+  const askDlg = $('#ask');
+  let askResolve = null;
+  function ask(opt) {
+    const o = Object.assign({ title: '', text: '', ok: 'はい', cancel: 'やめる', danger: false }, opt || {});
+    $('#askTitle').textContent = o.title;
+    $('#askText').textContent = o.text;
+    $('#askText').hidden = !o.text;
+    const okBtn = $('#askOk');
+    okBtn.textContent = o.ok;
+    okBtn.className = o.danger ? 'danger-fill-btn' : 'primary-btn';
+    $('#askCancel').textContent = o.cancel;
+    return new Promise(resolve => {
+      askResolve = resolve;
+      askDlg.showModal();
+      // 取り消しがきく操作は「やめる」に、それ以外は「はい」に最初のフォーカス
+      setTimeout(() => (o.danger ? $('#askCancel') : okBtn).focus(), 30);
+    });
+  }
+  function askDone(v) {
+    if (askDlg.open) askDlg.close();
+    if (askResolve) { const r = askResolve; askResolve = null; r(v); }
+  }
+  $('#askOk').addEventListener('click', () => askDone(true));
+  $('#askCancel').addEventListener('click', () => askDone(false));
+  askDlg.addEventListener('cancel', e => { e.preventDefault(); askDone(false); });   // Esc
+  askDlg.addEventListener('click', e => { if (e.target === askDlg) askDone(false); }); // 背景
+
   // ---------- 編集シート ----------
   const taskSheet = $('#taskSheet');
   function openTaskSheet(id) {
@@ -582,9 +612,12 @@
     taskSheet.close();
   });
   $('#taskCancel').addEventListener('click', () => taskSheet.close());
-  $('#taskDelete').addEventListener('click', () => {
+  $('#taskDelete').addEventListener('click', async () => {
     const t = findTask(editingId);
-    if (t && confirm(`「${t.title}」を消しますか？`)) { removeTask(editingId); taskSheet.close(); }
+    if (!t) return;
+    if (await ask({ title: `「${t.title}」を消しますか？`, text: 'きょうの一覧から消えます。辞書やセットには影響しません。', ok: '消す', danger: true })) {
+      removeTask(editingId); taskSheet.close();
+    }
   });
 
   // ---------- 設定シート ----------
@@ -649,7 +682,7 @@
     try {
       const obj = JSON.parse(await f.text());
       if (!obj || !Array.isArray(obj.tasks)) throw new Error('shape');
-      if (state.tasks.length && !confirm('いまのデータを、読み込んだ内容で置きかえます。よいですか？')) return;
+      if (state.tasks.length && !(await ask({ title: '読み込んだ内容で置きかえますか？', text: 'いまの端末にあるデータは、読み込んだファイルの内容に置きかわります。', ok: '置きかえる', danger: true }))) return;
       state = normalize(obj);
       save(); applyTheme(); rollover(); render(); paintSettings();
       toast(`${state.tasks.length} 件を読み込みました。`);
@@ -657,8 +690,8 @@
       toast('このファイルは読み込めませんでした。');
     }
   });
-  $('#clearBtn').addEventListener('click', () => {
-    if (!confirm('きょうのやることをすべて消します。カラーテーマ・くらしのかたち・辞書は残ります。よいですか？')) return;
+  $('#clearBtn').addEventListener('click', async () => {
+    if (!(await ask({ title: 'きょうのやることを、すべて消しますか？', text: 'カラーテーマ・くらしのかたち・辞書・いつものセットは残ります。', ok: '消す', danger: true }))) return;
     const keep = { settings: state.settings, household: state.household, custom: state.custom, sets: state.sets, recent: state.recent, dictOff: state.dictOff };
     state = Object.assign(defaultState(), keep);
     save(); render(); settingsSheet.close();
@@ -683,10 +716,10 @@
           </div>`).join('')}</div>`
       : `<p class="word-empty">まだありません。「よく使うことば」の下の欄から足せます。</p>`;
   }
-  $('#customList').addEventListener('click', e => {
+  $('#customList').addEventListener('click', async e => {
     const x = e.target.closest('.word-x'); if (!x) return;
     const w = x.dataset.remove;
-    if (!confirm(`「${w}」を辞書から消しますか？`)) return;
+    if (!(await ask({ title: `「${w}」を辞書から消しますか？`, text: 'あとで足しなおすこともできます。', ok: '消す', danger: true }))) return;
     state.custom = state.custom.filter(c => c.w !== w);
     save(); renderSuggest(); paintCustomList();
   });
@@ -862,7 +895,7 @@
     newSetDays = newSetDays.includes(day) ? newSetDays.filter(x => x !== day) : newSetDays.concat([day]).sort();
     paintSets();
   });
-  $('#setSaveForm').addEventListener('submit', e => {
+  $('#setSaveForm').addEventListener('submit', async e => {
     e.preventDefault();
     const name = $('#setName').value.trim().slice(0, 20);
     const u = undone();
@@ -872,7 +905,7 @@
     const tasks = u.map(t => ({ title: t.title, q: t.q }));
     const existing = state.sets.find(st => st.name === name);
     if (existing) {
-      if (!confirm(`「${name}」はすでにあります。中身をいまの一覧で置きかえますか？`)) return;
+      if (!(await ask({ title: `「${name}」はすでにあります`, text: `中身を、いまの「まだ」${u.length} 件で置きかえますか？`, ok: '置きかえる' }))) return;
       existing.tasks = tasks; existing.days = newSetDays.slice();
     } else {
       state.sets.push({ id: uid(), name, days: newSetDays.slice(), auto: true, tasks });
@@ -882,7 +915,7 @@
     paintSets();
     toast(`「${name}」を保存しました。`);
   });
-  $('#setsList').addEventListener('click', e => {
+  $('#setsList').addEventListener('click', async e => {
     const card = e.target.closest('.set'); if (!card) return;
     const st = state.sets.find(x => x.id === card.dataset.set); if (!st) return;
     const day = e.target.closest('.day');
@@ -903,11 +936,11 @@
       case 'update': {
         const u = undone();
         if (!u.length) { toast('きょうの一覧に、まだのものがありません。'); return; }
-        if (!confirm(`「${st.name}」の中身を、いまの「まだ」${u.length} 件で置きかえますか？`)) return;
+        if (!(await ask({ title: `「${st.name}」を、いまの一覧で更新しますか？`, text: `いまの「まだ」${u.length} 件に置きかわります。曜日の設定はそのままです。`, ok: '更新する' }))) return;
         st.tasks = u.map(t => ({ title: t.title, q: t.q })); save(); paintSets(); toast('更新しました。'); break;
       }
       case 'delete':
-        if (!confirm(`「${st.name}」を消しますか？`)) return;
+        if (!(await ask({ title: `「${st.name}」を消しますか？`, text: 'きょうの一覧に置いたものは残ります。', ok: '消す', danger: true }))) return;
         state.sets = state.sets.filter(x => x.id !== st.id); save(); paintSets(); break;
     }
   });
@@ -995,11 +1028,11 @@
     dictSel[k] = dictSel[k] === id ? null : id;   // 同じものをもう一度押すと解除
     paintDict();
   });
-  $('#dictBody').addEventListener('click', e => {
+  $('#dictBody').addEventListener('click', async e => {
     const x = e.target.closest('.word-x');
     if (x) {
       const w = x.dataset.remove;
-      if (!confirm(`「${w}」を辞書から消しますか？`)) return;
+      if (!(await ask({ title: `「${w}」を辞書から消しますか？`, text: 'あとで足しなおすこともできます。', ok: '消す', danger: true }))) return;
       state.custom = state.custom.filter(c => c.w !== w);
       save(); renderSuggest(); paintDict();
       return;

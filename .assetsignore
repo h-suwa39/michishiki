@@ -1,0 +1,8 @@
+# 配信しないファイル（Workers の静的アセットから除外）
+.git
+.gitignore
+.assetsignore
+wrangler.jsonc
+README.md
+CHANGELOG.md
+docs

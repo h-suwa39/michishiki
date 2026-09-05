@@ -25,11 +25,15 @@ python3 -m http.server 8000
 
 ビルドもインストールも不要です。外部ライブラリは使っていません。
 
-### 公開する（Cloudflare Pages）
+### 公開する（Cloudflare）
 
-1. Cloudflare ダッシュボードで **Workers & Pages → Create → Pages → Connect to Git** を選び、このリポジトリを接続する
-2. Build settings は **Framework preset: None、Build command: 空、Build output directory: `/`** にする
-3. Deploy すると `https://<project>.pages.dev/` で公開される。スマホのブラウザから開き「ホーム画面に追加」でアプリのように使える
+リポジトリに Workers 用の設定（`wrangler.jsonc`）を同梱しているので、Git 連携で接続するだけで公開できます。
+
+1. Cloudflare ダッシュボードで **Workers & Pages → Create → Import a repository** を選び、`h-suwa39/michishiki` を接続する
+2. Project name は `michishiki`、Build command は空、Deploy command は `npx wrangler deploy` のまま **Deploy**
+3. `https://michishiki.<アカウント名>.workers.dev/` で公開される。スマホのブラウザから開き「ホーム画面に追加」でアプリのように使える
+
+Pages で公開する場合は、Framework preset を None、Build output directory を `/` にすれば同じように動きます。
 
 ## 画面のことば
 
@@ -53,7 +57,7 @@ python3 -m http.server 8000
 - HTML / CSS / JavaScript のみ。ビルド不要・ライブラリ不要・サーバー不要
 - 見出しの書体に [Zen Maru Gothic](https://fonts.google.com/specimen/Zen+Maru+Gothic)（Google Fonts）を使用。読み込めない環境では端末の丸ゴシック系、ゴシック系に順に落ちます
 - Service Worker でアプリ本体をキャッシュ（オフライン起動）
-- ホスティングは Cloudflare Pages（静的配信）
+- ホスティングは Cloudflare（Workers の静的アセット配信。Pages でも可）
 
 設計の背景は [docs/CONCEPT.md](docs/CONCEPT.md)、変更点は [CHANGELOG.md](CHANGELOG.md) を参照してください。
 

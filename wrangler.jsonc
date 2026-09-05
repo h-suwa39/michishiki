@@ -1,0 +1,12 @@
+{
+  // みちしき — Cloudflare Workers の静的アセット配信としてデプロイする設定。
+  // ビルド不要。リポジトリのファイルをそのまま配信する。
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "michishiki",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "directory": "./",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

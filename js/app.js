@@ -23,6 +23,17 @@
     4: { name: '手ばなす',       sub: 'いそがない・だいじではない' },
   };
 
+
+  /* よく使うことば。家のこと・子どものことを中心に、手で打たなくても置けるように */
+  const DICTIONARY = [
+    { id: 'gohan', name: 'ごはん', words: ['朝ごはんの準備', 'お昼ごはんの準備', '晩ごはんの準備', '献立を考える', '買い物', 'お弁当づくり', '食器を洗う', 'ミルク', '離乳食', 'おやつ'] },
+    { id: 'kodomo', name: 'こども', words: ['おむつ替え', 'お着がえ', 'お風呂に入れる', '寝かしつけ', '保育園の送り', '保育園のお迎え', '連絡帳を書く', '絵本を読む', '公園に行く', '予防接種の予約', '爪を切る', '習いごとの送迎'] },
+    { id: 'ie', name: 'いえのこと', words: ['洗濯をまわす', '洗濯物を干す', '洗濯物をたたむ', '掃除機をかける', 'ゴミを出す', 'トイレそうじ', 'お風呂そうじ', '布団を干す', '郵便を確認する', '植物に水をやる'] },
+    { id: 'jibun', name: 'じぶん', words: ['散歩', '薬をのむ', '水を飲む', 'ひと休み', 'ストレッチ', '病院の予約', '友だちに連絡', '好きな音楽を聴く', '早く寝る'] },
+    { id: 'soto', name: 'そと・手続き', words: ['銀行・振込', '役所の手続き', '宅配を受け取る', '学校のプリント確認', '返信するメール', '電話をかける', '支払い'] },
+  ];
+  const RECENT_MAX = 40;
+
   const DONE_WORDS = [
     'ひとつ、進みました。',
     'いい調子。',
@@ -42,6 +53,7 @@
     version: VERSION,
     date: todayKey(),
     tasks: [],
+    recent: [],
     settings: { theme: 'ai', appearance: 'system', celebrate: true, view: 'list' },
   });
 
@@ -78,6 +90,7 @@
       createdAt: t.createdAt || Date.now(),
     })) : [];
     if (typeof s.date !== 'string') s.date = todayKey();
+    s.recent = Array.isArray(s.recent) ? s.recent.filter(x => typeof x === 'string').slice(0, RECENT_MAX) : [];
     return s;
   }
   function save() {
@@ -252,12 +265,23 @@
   }
 
   // ---------- 操作 ----------
-  function addTask(title) {
-    const t = title.trim();
+  function addTask(raw) {
+    const t = String(raw || '').trim();
     if (!t) return;
-    state.tasks.push({ id: uid(), title: t.slice(0, 120), done: false, doneAt: null, q: 0, createdAt: Date.now() });
-    save(); render();
+    const title = t.slice(0, 120);
+    state.tasks.push({ id: uid(), title, done: false, doneAt: null, q: 0, createdAt: Date.now() });
+    state.recent = [title].concat(state.recent.filter(x => x !== title)).slice(0, RECENT_MAX);
+    save(); render(); renderSuggest();
     $('#carryNotice').hidden = true;
+  }
+  const hasToday = title => state.tasks.some(t => t.title === title);
+
+  /* 入力欄の候補：自分が入れたことば → 辞書のことば */
+  function renderSuggest() {
+    const seen = new Set();
+    const words = [];
+    state.recent.concat(DICTIONARY.flatMap(c => c.words)).forEach(w => { if (!seen.has(w)) { seen.add(w); words.push(w); } });
+    $('#suggestList').innerHTML = words.slice(0, 80).map(w => `<option value="${esc(w)}"></option>`).join('');
   }
   function findTask(id) { return state.tasks.find(t => t.id === id); }
 
@@ -408,9 +432,41 @@
   });
 
   // 背景タップでシートを閉じる
-  [taskSheet, settingsSheet, $('#finale')].forEach(d => {
+  [taskSheet, settingsSheet, $('#dictSheet'), $('#finale')].forEach(d => {
     d.addEventListener('click', e => { if (e.target === d) d.close(); });
   });
+
+
+  // ---------- よく使うことば ----------
+  const dictSheet = $('#dictSheet');
+  let dictTab = 'mine';
+  function openDict() {
+    dictTab = state.recent.length ? 'mine' : DICTIONARY[0].id;
+    paintDict();
+    dictSheet.showModal();
+  }
+  function paintDict() {
+    const tabs = [{ id: 'mine', name: 'じぶんのことば' }].concat(DICTIONARY);
+    $('#dictTabs').innerHTML = tabs.map(t => `<button type="button" role="tab" class="dict-tab" data-tab="${t.id}" aria-selected="${t.id === dictTab}">${t.name}</button>`).join('');
+    let words = dictTab === 'mine' ? state.recent : (DICTIONARY.find(c => c.id === dictTab) || DICTIONARY[0]).words;
+    $('#dictBody').innerHTML = words.length
+      ? `<div class="dict-words">${words.map(w => `<button type="button" class="word" data-word="${esc(w)}" aria-pressed="${hasToday(w)}">${esc(w)}</button>`).join('')}</div>`
+      : `<p class="word-empty">自分で入れたことばが、ここにたまっていきます。</p>`;
+  }
+  $('#dictTabs').addEventListener('click', e => {
+    const b = e.target.closest('.dict-tab'); if (!b) return;
+    dictTab = b.dataset.tab; paintDict();
+  });
+  $('#dictBody').addEventListener('click', e => {
+    const b = e.target.closest('.word'); if (!b) return;
+    const w = b.dataset.word;
+    if (hasToday(w)) { toast('もう置いてあります。'); return; }
+    addTask(w);
+    b.setAttribute('aria-pressed', 'true');
+    toast(`「${w}」を置きました。`);
+  });
+  $('#dictBtn').addEventListener('click', openDict);
+  $('#dictClose').addEventListener('click', () => dictSheet.close());
 
   // ---------- イベント（委譲） ----------
   document.addEventListener('click', e => {
@@ -556,6 +612,7 @@
   applyTheme();
   rollover();
   render();
+  renderSuggest();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') { rollover(); render(); }
   });

@@ -47,8 +47,8 @@
 
 <main class="app">
   <section class="today" aria-label="きょうの状況">
+    <p class="today-eyebrow">きょうのあなたもちゃんと歩けるように</p>
     <div class="today-text">
-      <p class="today-eyebrow">きょうのあなたもちゃんと歩けるように</p>
       <h2 class="today-date" id="todayDate">—</h2>
       <p class="today-status" id="todayStatus">—</p>
     </div>
@@ -80,11 +80,34 @@
 </main>
 
 <form class="composer" id="composer" autocomplete="off">
-  <input id="composerInput" type="text" maxlength="120" placeholder="きょう、やることをひとつ" aria-label="やることを追加" enterkeyhint="done">
-  <button type="submit" class="add-btn" aria-label="追加">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-  </button>
+  <div class="composer-inner">
+    <button type="button" class="dict-btn" id="dictBtn" aria-label="よく使うことばから選ぶ" title="よく使うことば">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/><path d="M9 7.5h7M9 11h5"/></svg>
+    </button>
+    <input id="composerInput" type="text" maxlength="120" list="suggestList" placeholder="きょう、やることをひとつ" aria-label="やることを追加" enterkeyhint="done">
+    <datalist id="suggestList"></datalist>
+    <button type="submit" class="add-btn" aria-label="追加">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
 </form>
+
+<!-- よく使うことば -->
+<dialog class="sheet" id="dictSheet" aria-labelledby="dictTitle">
+  <div class="sheet-body">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="dict-head">
+      <h3 id="dictTitle" class="sheet-title">よく使うことば</h3>
+      <p class="field-help">タップするとそのまま置けます。いくつでも。</p>
+    </div>
+    <div class="dict-tabs" id="dictTabs" role="tablist"></div>
+    <div class="dict-body" id="dictBody"></div>
+    <div class="sheet-actions">
+      <span class="spacer"></span>
+      <button type="button" class="primary-btn" id="dictClose">閉じる</button>
+    </div>
+  </div>
+</dialog>
 
 <!-- タスクの編集シート -->
 <dialog class="sheet" id="taskSheet" aria-labelledby="taskSheetTitle">

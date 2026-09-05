@@ -65,7 +65,7 @@
 | 保存 | `localStorage` + JSON ファイルの書き出し・読み込み | 無料 |
 | 書体 | Zen Maru Gothic（Google Fonts）、読み込めなければ端末のフォント | 無料 |
 | オフライン | Service Worker で本体をキャッシュ | 無料 |
-| ホスティング | Cloudflare Pages | 無料 |
+| ホスティング | Cloudflare（Workers 静的アセット / Pages） | 無料 |
 
 ## 7. 将来の拡張候補（必要になったら足す）
 

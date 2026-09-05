@@ -106,12 +106,11 @@
 
 /* ---------- リセットと土台 ---------- */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+html { -webkit-text-size-adjust: 100%; }
 :root { --vv-bottom: 0px; }   /* ブラウザのツールバーやキーボードに隠れる下端の高さ（JS が更新） */
 body {
   margin: 0;
-  overflow-x: hidden;
-  max-width: 100vw;
+  overflow-x: clip;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
@@ -209,7 +208,7 @@ body.wide .top, body.wide .app { max-width: 1040px; }
 .notice p { margin: 0; }
 
 /* 表示切りかえ */
-.views { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 6px 0 14px; }
+.views { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 6px 0 14px; }
 .seg {
   flex: none; position: relative; display: inline-grid; grid-template-columns: 1fr 1fr;
   background: var(--panel-2); border-radius: 999px; padding: 4px;
@@ -226,10 +225,10 @@ body.wide .top, body.wide .app { max-width: 1040px; }
   transition: transform .3s var(--ease);
 }
 .seg[data-active="quad"] .seg-thumb { transform: translateX(100%); }
-.nav-right { display: flex; align-items: center; gap: 0 2px; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+.nav-right { display: flex; align-items: center; gap: 0 2px; flex-wrap: wrap; justify-content: flex-end; min-width: 0; margin-left: auto; }
 .text-btn {
   color: var(--accent-ink); font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: var(--radius-s);
-  transition: background-color .2s;
+  transition: background-color .2s; white-space: nowrap;
 }
 .text-btn:hover { background: var(--accent-soft); }
 
@@ -370,10 +369,10 @@ body.wide .top, body.wide .app { max-width: 1040px; }
   padding: 10px 20px calc(14px + env(safe-area-inset-bottom));
   background: linear-gradient(to top, var(--bg) 70%, transparent);
   display: flex; flex-direction: column; align-items: center; gap: 8px;
-  transition: bottom .15s ease-out;
+  transition: bottom .15s ease-out; overflow: hidden;
 }
 /* 候補のことば（入力欄の上に横に並ぶ） */
-.suggest { width: min(100%, 680px); }
+.suggest { width: min(100%, 680px); max-width: 100%; overflow: hidden; }
 body.wide .suggest { width: min(100%, 1000px); }
 .suggest-row {
   display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 4px 2px 2px;
@@ -661,11 +660,12 @@ dialog::backdrop { background: rgba(20, 24, 40, .35); backdrop-filter: blur(2px)
 
 /* ---------- 効果 ---------- */
 #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+#fx:not(.on) { display: none; }
 .toast {
   position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom) + var(--vv-bottom)); transform: translateX(-50%) translateY(12px);
   background: var(--text); color: var(--bg); font-size: 14px; font-weight: 600;
   padding: 9px 16px; border-radius: 999px; opacity: 0; pointer-events: none; z-index: 40;
-  transition: opacity .3s, transform .3s var(--ease); white-space: nowrap;
+  transition: opacity .3s, transform .3s var(--ease); max-width: calc(100% - 32px); text-align: center; line-height: 1.4;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 

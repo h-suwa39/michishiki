@@ -1263,10 +1263,21 @@
 
   function resizeFx() {
     const dpr = Math.min(devicePixelRatio || 1, 2);
-    fx.width = innerWidth * dpr; fx.height = innerHeight * dpr;
+    fx.width = Math.round(innerWidth * dpr); fx.height = Math.round(innerHeight * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  addEventListener('resize', resizeFx); resizeFx();
+  /* 変形に関係なく描画面を全部消す */
+  function clearFx() {
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, fx.width, fx.height); ctx.restore();
+  }
+  function stopFx() {
+    particles = []; fxRunning = false;
+    clearFx(); fx.classList.remove('on');
+  }
+  addEventListener('resize', () => { resizeFx(); if (!particles.length) stopFx(); });
+  resizeFx();
+  // 画面を離れて戻ったとき、途中の粒が残らないように止める
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') stopFx(); });
 
   function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
   function fxColors() {
@@ -1285,10 +1296,11 @@
         shape: Math.random() < 0.5 ? 'dot' : 'leaf', rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.2,
       });
     }
+    fx.classList.add('on');
     if (!fxRunning) { fxRunning = true; requestAnimationFrame(tick); }
   }
   function tick() {
-    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    clearFx();
     particles = particles.filter(p => p.life > 0);
     for (const p of particles) {
       p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.vx *= 0.985; p.vy *= 0.985;
@@ -1302,7 +1314,7 @@
     }
     ctx.globalAlpha = 1;
     if (particles.length) requestAnimationFrame(tick);
-    else { fxRunning = false; ctx.clearRect(0, 0, innerWidth, innerHeight); }
+    else stopFx();
   }
 
   function celebrate(el) {

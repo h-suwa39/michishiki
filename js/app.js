@@ -421,7 +421,7 @@
         <div class="empty">
           <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M13 12 V 26.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M7 27 H 19" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M8 6.5 H 22 L 26.25 10.75 L 22 15 H 8 Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="10.75" r="1.6" fill="var(--bg)"/></svg>
           <p>きょうのあなたがやることを、ひとつ書いてみましょう。</p>
-          <small>下の欄に入れて、追加するだけ。順番はあとから並べかえられます。</small>
+          <small>下の欄に入れて、追加するだけ。順番は矢印か、長押しでつまんで並べかえられます。</small>
         </div>`;
     } else {
       if (u.length === 0) {
@@ -1076,66 +1076,100 @@
   });
 
 
-  // タッチ（とペン）のドラッグ。長押しでつまみ上げ、指の下の象限に置く
-  const touchDrag = { id: null, timer: 0, startX: 0, startY: 0, ghost: null, active: false, card: null };
-  function tdCancelTimer() { clearTimeout(touchDrag.timer); touchDrag.timer = 0; }
-  function tdTarget(x, y) {
+  // つまんで動かす（タッチは長押し、マウスはそのまま）。
+  // 「わける」のカードは象限へ、「ならべる」の行は並びかえ。
+  const drag = { kind: null, id: null, el: null, ghost: null, timer: 0, active: false, startX: 0, startY: 0, offX: 0, offY: 0, moved: false };
+  function dragCancelTimer() { clearTimeout(drag.timer); drag.timer = 0; }
+  function zoneAt(x, y) {
     const el = document.elementFromPoint(x, y);
     return el && (el.closest('.quad') || el.closest('.tray'));
   }
-  function tdHighlight(zone) {
+  function highlightZone(zone) {
     $$('.quad.is-over').forEach(q => q.classList.remove('is-over'));
     if (zone && zone.classList.contains('quad')) zone.classList.add('is-over');
   }
-  function tdEnd(drop, x, y) {
-    tdCancelTimer();
-    if (touchDrag.card) touchDrag.card.classList.remove('lifting', 'dragging');
-    if (touchDrag.ghost) { touchDrag.ghost.remove(); touchDrag.ghost = null; }
-    tdHighlight(null);
-    if (touchDrag.active && drop) {
-      const zone = tdTarget(x, y);
-      if (zone) setQuadrant(touchDrag.id, zone.classList.contains('quad') ? Number(zone.dataset.q) : 0);
-    }
-    touchDrag.active = false; touchDrag.id = null; touchDrag.card = null;
+  function dragStart(e) {
+    drag.active = true; drag.moved = false;
+    const el = drag.el;
+    el.classList.remove('lifting'); el.classList.add('dragging');
+    const r = el.getBoundingClientRect();
+    const g = el.cloneNode(true);
+    g.className = (drag.kind === 'card' ? 'card' : 'task') + ' drag-ghost';
+    g.style.width = r.width + 'px'; g.style.left = r.left + 'px'; g.style.top = r.top + 'px';
+    document.body.appendChild(g);
+    drag.ghost = g;
+    drag.offX = e.clientX - r.left; drag.offY = e.clientY - r.top;
+    if (navigator.vibrate) navigator.vibrate(10);
   }
+  function dragMove(e) {
+    drag.moved = true;
+    drag.ghost.style.left = (e.clientX - drag.offX) + 'px';
+    drag.ghost.style.top = (e.clientY - drag.offY) + 'px';
+    if (drag.kind === 'card') { highlightZone(zoneAt(e.clientX, e.clientY)); return; }
+    // 行の並びかえ：指の下の行の上半分なら前に、下半分なら後ろに入れる
+    const list = $('#undoneList'); if (!list) return;
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const row = under && under.closest('#undoneList .task');
+    if (!row || row === drag.el) return;
+    const r = row.getBoundingClientRect();
+    if (e.clientY < r.top + r.height / 2) list.insertBefore(drag.el, row);
+    else list.insertBefore(drag.el, row.nextSibling);
+  }
+  function dragEnd(drop, x, y) {
+    dragCancelTimer();
+    const was = drag.active;
+    if (drag.el) drag.el.classList.remove('lifting', 'dragging');
+    if (drag.ghost) { drag.ghost.remove(); drag.ghost = null; }
+    highlightZone(null);
+    if (was && drop) {
+      if (drag.kind === 'card') {
+        const zone = zoneAt(x, y);
+        if (zone) setQuadrant(drag.id, zone.classList.contains('quad') ? Number(zone.dataset.q) : 0);
+      } else {
+        const ids = Array.from($$('#undoneList .task')).map(li => li.dataset.id);
+        const byId = new Map(undone().map(t => [t.id, t]));
+        state.tasks = ids.map(id => byId.get(id)).filter(Boolean).concat(doneList());
+        save(); render();
+      }
+    } else if (was) {
+      render();   // 途中でやめたら元の並びに戻す
+    }
+    // つまんで動かした直後のクリックは無視する（タイトルを開いてしまわないように）
+    if (was && drag.moved) drag.suppressUntil = Date.now() + 300;
+    drag.active = false; drag.id = null; drag.el = null; drag.kind = null;
+  }
+  document.addEventListener('click', e => {
+    if (drag.suppressUntil && Date.now() < drag.suppressUntil) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
   document.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse') return;               // マウスは標準のドラッグを使う
+    if (e.button !== undefined && e.button !== 0) return;
     const card = e.target.closest && e.target.closest('.card');
-    if (!card || e.target.closest('.check')) return;
-    touchDrag.id = card.dataset.id; touchDrag.card = card;
-    touchDrag.startX = e.clientX; touchDrag.startY = e.clientY;
-    tdCancelTimer();
-    touchDrag.timer = setTimeout(() => {
-      touchDrag.active = true;
-      card.classList.add('dragging');
-      const r = card.getBoundingClientRect();
-      const g = card.cloneNode(true);
-      g.className = 'card drag-ghost';
-      g.style.width = r.width + 'px';
-      g.style.left = r.left + 'px'; g.style.top = r.top + 'px';
-      document.body.appendChild(g);
-      touchDrag.ghost = g;
-      touchDrag.offX = e.clientX - r.left; touchDrag.offY = e.clientY - r.top;
-      if (navigator.vibrate) navigator.vibrate(10);
-    }, 260);
-    card.classList.add('lifting');
+    const row = e.target.closest && e.target.closest('#undoneList .task');
+    const el = card || row;
+    if (!el || e.target.closest('.check') || e.target.closest('.order')) return;
+    if (card && e.pointerType === 'mouse') return;     // カードのマウス操作は標準のドラッグに任せる
+    drag.kind = card ? 'card' : 'row'; drag.id = el.dataset.id; drag.el = el;
+    drag.startX = e.clientX; drag.startY = e.clientY;
+    dragCancelTimer();
+    if (e.pointerType === 'mouse') return;               // マウスは動き出したら開始（下の pointermove）
+    drag.timer = setTimeout(() => dragStart(e), 260);
+    el.classList.add('lifting');
   });
   document.addEventListener('pointermove', e => {
-    if (!touchDrag.id) return;
-    if (!touchDrag.active) {
-      // 長押し前に動いたらスクロールとみなす
-      if (Math.hypot(e.clientX - touchDrag.startX, e.clientY - touchDrag.startY) > 8) tdEnd(false);
-      return;
+    if (!drag.id) return;
+    if (!drag.active) {
+      const dist = Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY);
+      if (e.pointerType === 'mouse') { if (dist > 6) dragStart(e); else return; }
+      else if (dist > 8) { dragEnd(false); return; }     // 長押し前に動いたらスクロール
+      else return;
     }
-    touchDrag.ghost.style.left = (e.clientX - touchDrag.offX) + 'px';
-    touchDrag.ghost.style.top = (e.clientY - touchDrag.offY) + 'px';
-    tdHighlight(tdTarget(e.clientX, e.clientY));
+    dragMove(e);
   });
-  document.addEventListener('pointerup', e => { if (touchDrag.id) tdEnd(true, e.clientX, e.clientY); });
-  document.addEventListener('pointercancel', () => { if (touchDrag.id) tdEnd(false); });
+  document.addEventListener('pointerup', e => { if (drag.id) dragEnd(true, e.clientX, e.clientY); });
+  document.addEventListener('pointercancel', () => { if (drag.id) dragEnd(false); });
   // ドラッグ中は画面のスクロールを止める。長押しメニューも出さない
-  document.addEventListener('touchmove', e => { if (touchDrag.active) e.preventDefault(); }, { passive: false });
-  document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.card')) e.preventDefault(); });
+  document.addEventListener('touchmove', e => { if (drag.active) e.preventDefault(); }, { passive: false });
+  document.addEventListener('contextmenu', e => { if (e.target.closest && (e.target.closest('.card') || e.target.closest('#undoneList .task'))) e.preventDefault(); });
 
   // ---------- 演出 ----------
   const fx = $('#fx');

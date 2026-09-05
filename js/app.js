@@ -208,6 +208,7 @@
     tasks: [],
     recent: [],
     custom: [],
+    sets: [],
     household: { kidsOn: true, kids: [], partnerOn: false, partnerName: '', family: [], pets: [] },
     settings: { theme: 'ai', appearance: 'system', celebrate: true, view: 'list' },
   });
@@ -249,6 +250,13 @@
     const names = a => Array.isArray(a) ? a.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, 20)).slice(0, 10) : [];
     const h = Object.assign({}, base.household, (obj && obj.household) || {});
     s.household = { kidsOn: h.kidsOn !== false, kids: names(h.kids), partnerOn: !!h.partnerOn, partnerName: String(h.partnerName || '').slice(0, 20), family: names(h.family), pets: names(h.pets) };
+    s.sets = Array.isArray(s.sets) ? s.sets.filter(x => x && typeof x.name === 'string').map(x => ({
+      id: String(x.id || uid()),
+      name: x.name.trim().slice(0, 20) || 'いつもの',
+      days: (Array.isArray(x.days) ? x.days : []).map(Number).filter(d => d >= 0 && d <= 6),
+      auto: x.auto !== false,
+      tasks: (Array.isArray(x.tasks) ? x.tasks : []).filter(t => t && typeof t.title === 'string').map(t => ({ title: t.title.slice(0, 120), q: [1, 2, 3, 4].includes(t.q) ? t.q : 0 })).slice(0, 60),
+    })).slice(0, 20) : [];
     const groupIds = new Set(DICT_GROUPS.map(g => g.id));
     s.custom = Array.isArray(s.custom) ? s.custom.filter(c => c && typeof c.w === 'string' && c.w.trim()).map(c => ({
       w: c.w.trim().slice(0, 60), tags: (Array.isArray(c.tags) ? c.tags : []).filter(t => groupIds.has(t)), custom: true,
@@ -274,11 +282,35 @@
     carried = remaining.length;
     state.tasks = remaining;
     state.date = today;
+    const placed = applySetsForToday();
     save();
-    if (carried > 0) {
-      $('#carryText').textContent = `前の日から ${carried} 件を持ち越しました。いま必要なものだけ残しても大丈夫です。`;
+    const notes = [];
+    if (carried > 0) notes.push(`前の日から ${carried} 件を持ち越しました。`);
+    if (placed.count > 0) notes.push(`「${placed.names.join('」「')}」から ${placed.count} 件を置きました。`);
+    if (notes.length) {
+      $('#carryText').textContent = notes.join(' ') + ' いま必要なものだけ残しても大丈夫です。';
       $('#carryNotice').hidden = false;
     }
+  }
+  /* きょうの曜日に合う自動セットを置く。すでにある言葉は重ねない */
+  function applySetsForToday() {
+    const dow = new Date().getDay();
+    const names = []; let count = 0;
+    state.sets.filter(st => st.auto && st.days.includes(dow)).forEach(st => {
+      const n = placeSet(st, false);
+      if (n > 0) { names.push(st.name); count += n; }
+    });
+    return { names, count };
+  }
+  function placeSet(st, doSave = true) {
+    let n = 0;
+    st.tasks.forEach(t => {
+      if (state.tasks.some(x => x.title === t.title)) return;
+      state.tasks.push({ id: uid(), title: t.title, done: false, doneAt: null, q: t.q, createdAt: Date.now() });
+      n++;
+    });
+    if (doSave && n) save();
+    return n;
   }
 
   // ---------- DOM ----------
@@ -603,14 +635,14 @@
   });
   $('#clearBtn').addEventListener('click', () => {
     if (!confirm('きょうのやることをすべて消します。カラーテーマ・くらしのかたち・辞書は残ります。よいですか？')) return;
-    const keep = { settings: state.settings, household: state.household, custom: state.custom };
+    const keep = { settings: state.settings, household: state.household, custom: state.custom, sets: state.sets, recent: state.recent };
     state = Object.assign(defaultState(), keep);
     save(); render(); settingsSheet.close();
     toast('きょうのやることを、すべて消しました。');
   });
 
   // 背景タップでシートを閉じる
-  [taskSheet, settingsSheet, $('#dictSheet'), $('#finale')].forEach(d => {
+  [taskSheet, settingsSheet, $('#dictSheet'), $('#setsSheet'), $('#finale')].forEach(d => {
     d.addEventListener('click', e => { if (e.target === d) d.close(); });
   });
 
@@ -698,6 +730,110 @@
     const key = x.closest('.names').dataset.key;
     state.household[key].splice(Number(x.dataset.idx), 1);
     householdChanged();
+  });
+
+
+  // ---------- いつものセット ----------
+  const setsSheet = $('#setsSheet');
+  const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
+  let newSetDays = [];
+  function openSets() {
+    newSetDays = [];
+    $('#setName').value = '';
+    paintSets();
+    setsSheet.showModal();
+  }
+  function daysHtml(days, attr) {
+    const today = new Date().getDay();
+    return `<div class="days" ${attr || ''}>${DAY_NAMES.map((n, i) => `<button type="button" class="day ${i === today ? 'is-today' : ''}" data-day="${i}" aria-pressed="${days.includes(i)}" aria-label="${n}曜日">${n}</button>`).join('')}</div>`;
+  }
+  function paintSets() {
+    const u = undone();
+    $('#setsList').innerHTML = state.sets.length
+      ? `<div class="sets">${state.sets.map(st => `
+          <div class="set" data-set="${st.id}">
+            <div class="set-head">
+              <span class="set-name">${esc(st.name)}</span>
+              <span class="set-count">${st.tasks.length} 件</span>
+              <button type="button" class="chip small" data-act="place">きょうに置く</button>
+            </div>
+            <div class="set-tasks">${st.tasks.map(t => `<span><i class="q${t.q}"></i>${esc(t.title)}</span>`).join('') || '<span>（からっぽ）</span>'}</div>
+            <div class="set-foot">
+              ${daysHtml(st.days, `data-days-of="${st.id}"`)}
+              <span class="spacer"></span>
+              <button type="button" class="chip small" data-act="auto" aria-pressed="${st.auto}">${st.auto ? '自動で置く' : '手で置く'}</button>
+              <button type="button" class="chip small" data-act="update" title="いまのきょうの一覧で、このセットの中身を置きかえます">いまの一覧で更新</button>
+              <button type="button" class="word-x" data-act="delete" aria-label="「${esc(st.name)}」を消す">×</button>
+            </div>
+          </div>`).join('')}</div>`
+      : `<p class="set-empty">まだセットがありません。きょうの一覧を作ってから、下で保存してみてください。</p>`;
+    $('#setDays').outerHTML = daysHtml(newSetDays, 'id="setDays"');
+    $('#setSaveHint').textContent = u.length
+      ? `いまの「まだ」の ${u.length} 件が入ります。曜日を選ぶと、その日の朝に自動で置かれます。`
+      : 'きょうの一覧に「まだ」のものが無いので、先にやることを置いてください。';
+  }
+  $('#setsBtn').addEventListener('click', openSets);
+  $('#setsClose').addEventListener('click', () => setsSheet.close());
+  $('#setNameQuick').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    $('#setName').value = b.dataset.name;
+    newSetDays = b.dataset.days.split(',').map(Number);
+    paintSets();
+  });
+  $('#setSaveForm').addEventListener('click', e => {
+    const d = e.target.closest('#setDays .day'); if (!d) return;
+    const day = Number(d.dataset.day);
+    newSetDays = newSetDays.includes(day) ? newSetDays.filter(x => x !== day) : newSetDays.concat([day]).sort();
+    paintSets();
+  });
+  $('#setSaveForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('#setName').value.trim().slice(0, 20);
+    const u = undone();
+    if (!name) { toast('セットの名前を入れてください。'); return; }
+    if (!u.length) { toast('きょうの一覧に、まだのものがありません。'); return; }
+    if (state.sets.length >= 20) { toast('セットは 20 個までです。'); return; }
+    const tasks = u.map(t => ({ title: t.title, q: t.q }));
+    const existing = state.sets.find(st => st.name === name);
+    if (existing) {
+      if (!confirm(`「${name}」はすでにあります。中身をいまの一覧で置きかえますか？`)) return;
+      existing.tasks = tasks; existing.days = newSetDays.slice();
+    } else {
+      state.sets.push({ id: uid(), name, days: newSetDays.slice(), auto: true, tasks });
+    }
+    save();
+    $('#setName').value = ''; newSetDays = [];
+    paintSets();
+    toast(`「${name}」を保存しました。`);
+  });
+  $('#setsList').addEventListener('click', e => {
+    const card = e.target.closest('.set'); if (!card) return;
+    const st = state.sets.find(x => x.id === card.dataset.set); if (!st) return;
+    const day = e.target.closest('.day');
+    if (day) {
+      const d = Number(day.dataset.day);
+      st.days = st.days.includes(d) ? st.days.filter(x => x !== d) : st.days.concat([d]).sort();
+      save(); paintSets(); return;
+    }
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    switch (b.dataset.act) {
+      case 'place': {
+        const n = placeSet(st);
+        render(); renderSuggest();
+        toast(n ? `「${st.name}」から ${n} 件を置きました。` : 'すべて、もう置いてあります。');
+        break;
+      }
+      case 'auto': st.auto = !st.auto; save(); paintSets(); break;
+      case 'update': {
+        const u = undone();
+        if (!u.length) { toast('きょうの一覧に、まだのものがありません。'); return; }
+        if (!confirm(`「${st.name}」の中身を、いまの「まだ」${u.length} 件で置きかえますか？`)) return;
+        st.tasks = u.map(t => ({ title: t.title, q: t.q })); save(); paintSets(); toast('更新しました。'); break;
+      }
+      case 'delete':
+        if (!confirm(`「${st.name}」を消しますか？`)) return;
+        state.sets = state.sets.filter(x => x.id !== st.id); save(); paintSets(); break;
+    }
   });
 
   // ---------- よく使うことば ----------

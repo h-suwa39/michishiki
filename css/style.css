@@ -223,6 +223,7 @@ body.wide .top, body.wide .app { max-width: 1040px; }
   transition: transform .3s var(--ease);
 }
 .seg[data-active="quad"] .seg-thumb { transform: translateX(100%); }
+.nav-right { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
 .text-btn {
   color: var(--accent-ink); font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: var(--radius-s);
   transition: background-color .2s;
@@ -427,6 +428,33 @@ body.wide .top, body.wide .app { max-width: 1040px; }
 }
 .custom-row input:focus { border-color: var(--accent); outline: none; }
 .link-btn { color: var(--accent-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; font-size: inherit; }
+
+/* いつものセット */
+.sets { display: grid; gap: 8px; }
+.set {
+  display: grid; gap: 8px; padding: 12px 12px 10px; border-radius: var(--radius-m);
+  background: var(--bg); border: 1px solid var(--border);
+}
+.set-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.set-name { font-family: var(--font-display); font-weight: 700; font-size: 15px; flex: 1; min-width: 0; }
+.set-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.set-tasks { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px; color: var(--muted); }
+.set-tasks span { display: inline-flex; align-items: center; gap: 4px; }
+.set-tasks i { width: 7px; height: 7px; border-radius: 50%; background: var(--q0); }
+.set-tasks i.q1 { background: var(--q1); } .set-tasks i.q2 { background: var(--q2); } .set-tasks i.q3 { background: var(--q3); } .set-tasks i.q4 { background: var(--q4); }
+.set-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.set-foot .spacer { flex: 1; }
+.days { display: flex; gap: 4px; }
+.day {
+  width: 34px; height: 34px; border-radius: 50%; font-size: 13px; font-weight: 600; color: var(--muted);
+  background: var(--panel-2); border: 1.5px solid transparent; display: grid; place-items: center;
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.day[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+.day.is-today { text-decoration: underline; text-underline-offset: 3px; }
+.set-save { display: grid; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+.set-save .field-help { margin: 0; }
+.set-empty { color: var(--muted); font-size: 14px; margin: 4px 0; }
 
 /* 設定のメニュー */
 .tabs { display: flex; gap: 4px; background: var(--panel-2); border-radius: 999px; padding: 4px; }

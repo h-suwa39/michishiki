@@ -73,7 +73,10 @@
       <button role="tab" class="seg-btn" data-view="quad" aria-selected="false">わける</button>
       <span class="seg-thumb" aria-hidden="true"></span>
     </div>
+    <div class="nav-right">
     <button class="text-btn" id="suggestBtn" hidden title="4象限の位置にあわせて順番を組みなおします">4象限の順にならべる</button>
+    <button class="text-btn" id="setsBtn" title="平日用・休日用など、いつものやることのセット">いつもの</button>
+  </div>
   </nav>
 
   <section id="viewList" class="view" aria-label="ならべる"></section>
@@ -92,6 +95,37 @@
     </button>
   </div>
 </form>
+
+<!-- いつものセット -->
+<dialog class="sheet" id="setsSheet" aria-labelledby="setsTitle">
+  <div class="sheet-body">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="dict-head">
+      <h3 id="setsTitle" class="sheet-title">いつものセット</h3>
+    </div>
+    <p class="field-help">平日用、休日用のように、いつものやることをまとめておけます。曜日を決めておくと、その日の朝に自動で置かれます。</p>
+    <div id="setsList"></div>
+
+    <form class="set-save" id="setSaveForm" autocomplete="off">
+      <span class="field-label">きょうの一覧を、セットとして保存</span>
+      <div class="chips" id="setNameQuick">
+        <button type="button" class="chip small" data-name="平日" data-days="1,2,3,4,5">平日（月〜金）</button>
+        <button type="button" class="chip small" data-name="休日" data-days="0,6">休日（土・日）</button>
+      </div>
+      <div class="custom-row">
+        <input type="text" id="setName" maxlength="20" placeholder="セットの名前" aria-label="セットの名前">
+        <button type="submit" class="chip">保存</button>
+      </div>
+      <div class="days" id="setDays" aria-label="自動で置く曜日"></div>
+      <p class="field-help" id="setSaveHint"></p>
+    </form>
+
+    <div class="sheet-actions">
+      <span class="spacer"></span>
+      <button type="button" class="primary-btn" id="setsClose">閉じる</button>
+    </div>
+  </div>
+</dialog>
 
 <!-- よく使うことば -->
 <dialog class="sheet" id="dictSheet" aria-labelledby="dictTitle">

@@ -67,12 +67,12 @@
     W('買い物', 'hiru', 'gohan', 'odekake'),
     W('晩ごはんの準備', 'yoru', 'gohan'),
     W('食器を洗う', 'asa', 'yoru', 'gohan', 'ouchi'),
-    W('ミルク', 'asa', 'hiru', 'yoru', 'kodomo', 'gohan'),
-    W('離乳食', 'asa', 'hiru', 'yoru', 'kodomo', 'gohan'),
+    W('ミルク', 'asa', 'hiru', 'yoru', 'kodomo', 'gohan', { rep: true }),
+    W('離乳食', 'asa', 'hiru', 'yoru', 'kodomo', 'gohan', { rep: true }),
     W('おやつ', 'hiru', 'kodomo', 'gohan'),
     // こどもと（名前を入れると人数分に増える）
     W('{こども}の検温', 'asa', 'kodomo', { fb: '検温' }),
-    W('{こども}のおむつ替え', 'asa', 'hiru', 'yoru', 'kodomo', { fb: 'おむつ替え' }),
+    W('{こども}のおむつ替え', 'asa', 'hiru', 'yoru', 'kodomo', { fb: 'おむつ替え', rep: true }),
     W('{こども}のお着がえ', 'asa', 'yoru', 'kodomo', { fb: 'お着がえ' }),
     W('{こども}の連絡帳を書く', 'asa', 'kodomo', 'tetsuzuki', { fb: '連絡帳を書く' }),
     W('保育園の送り', 'asa', 'kodomo', 'odekake'),
@@ -91,7 +91,7 @@
     W('{こども}の爪を切る', 'tokidoki', 'kodomo', { fb: '爪を切る' }),
     // 必要な人だけ ON にする言葉（最初は OFF）
     W('{こども}の通院', 'tokidoki', 'kodomo', 'odekake', { fb: 'こどもの通院', off: true }),
-    W('{こども}の薬をのませる', 'asa', 'yoru', 'kodomo', { fb: 'こどもの薬', off: true }),
+    W('{こども}の薬をのませる', 'asa', 'yoru', 'kodomo', { fb: 'こどもの薬', off: true, rep: true }),
     W('幼稚園の送り', 'asa', 'kodomo', 'odekake', { off: true }),
     W('幼稚園のお迎え', 'hiru', 'kodomo', 'odekake', { off: true }),
     W('学童のお迎え', 'yoru', 'kodomo', 'odekake', { off: true }),
@@ -111,9 +111,9 @@
     W('{かぞく}の通院の付き添い', 'tokidoki', 'kazoku', 'odekake'),
     W('{かぞく}のデイサービスの送り出し', 'asa', 'kazoku', { off: true }),
     W('{かぞく}の介護の手続き', 'tokidoki', 'kazoku', 'tetsuzuki', { off: true }),
-    W('{ペット}のごはん', 'asa', 'yoru', 'kazoku', 'gohan'),
+    W('{ペット}のごはん', 'asa', 'yoru', 'kazoku', 'gohan', { rep: true }),
     W('{ペット}の水をかえる', 'asa', 'kazoku'),
-    W('{ペット}の散歩', 'asa', 'yoru', 'kazoku', 'odekake'),
+    W('{ペット}の散歩', 'asa', 'yoru', 'kazoku', 'odekake', { rep: true }),
     W('{ペット}のトイレそうじ', 'asa', 'ouchi', 'kazoku'),
     W('{ペット}と遊ぶ', 'hiru', 'kazoku'),
     W('{ペット}の通院', 'tokidoki', 'kazoku', 'odekake'),
@@ -133,8 +133,8 @@
     W('布団を干す', 'tokidoki', 'ouchi'),
     W('冷蔵庫の中を見る', 'tokidoki', 'ouchi', 'gohan'),
     // じぶんのこと
-    W('薬をのむ', 'asa', 'yoru', 'jibun'),
-    W('水を飲む', 'asa', 'hiru', 'yoru', 'jibun'),
+    W('薬をのむ', 'asa', 'yoru', 'jibun', { rep: true }),
+    W('水を飲む', 'asa', 'hiru', 'yoru', 'jibun', { rep: true }),
     W('ストレッチ', 'asa', 'yoru', 'jibun'),
     W('散歩', 'asa', 'hiru', 'jibun', 'odekake'),
     W('ひと休み', 'hiru', 'jibun'),
@@ -175,10 +175,11 @@
     DICTIONARY.concat(state.custom).forEach(d => {
       if (!d.custom && off.has(d.w)) return;
       if (!h.kidsOn && d.tags.includes('kodomo')) return;
-      expandWord(d, h).forEach(w => out.push({ w, tags: d.tags, custom: !!d.custom }));
+      expandWord(d, h).forEach(w => out.push({ w, tags: d.tags, custom: !!d.custom, rep: !!d.rep }));
     });
     return out;
   }
+  const isRepWord = title => activeDictionary().some(d => d.w === title && d.rep);
   const kazokuOn = () => { const h = state.household; return h.partnerOn || h.family.length > 0 || h.pets.length > 0; };
   const RECENT_MAX = 40;
 
@@ -265,6 +266,8 @@
       doneAt: t.doneAt || null,
       q: [1, 2, 3, 4].includes(t.q) ? t.q : 0,
       createdAt: t.createdAt || Date.now(),
+      repeat: !!t.repeat,
+      count: Math.max(0, Math.min(999, Number(t.count) || 0)),
     })) : [];
     if (typeof s.date !== 'string') s.date = todayKey();
     s.recent = Array.isArray(s.recent) ? s.recent.filter(x => typeof x === 'string').slice(0, RECENT_MAX) : [];
@@ -276,7 +279,7 @@
       name: x.name.trim().slice(0, 20) || 'いつもの',
       days: (Array.isArray(x.days) ? x.days : []).map(Number).filter(d => d >= 0 && d <= 6),
       auto: x.auto !== false,
-      tasks: (Array.isArray(x.tasks) ? x.tasks : []).filter(t => t && typeof t.title === 'string').map(t => ({ title: t.title.slice(0, 120), q: [1, 2, 3, 4].includes(t.q) ? t.q : 0 })).slice(0, 60),
+      tasks: (Array.isArray(x.tasks) ? x.tasks : []).filter(t => t && typeof t.title === 'string').map(t => ({ title: t.title.slice(0, 120), q: [1, 2, 3, 4].includes(t.q) ? t.q : 0, repeat: !!t.repeat })).slice(0, 60),
     })).slice(0, 20) : [];
     const known = new Set(DICTIONARY.map(d => d.w));
     s.dictOff = Array.isArray(obj && obj.dictOff) ? obj.dictOff.filter(w => typeof w === 'string' && known.has(w)) : DEFAULT_OFF();
@@ -301,7 +304,7 @@
   function rollover() {
     const today = todayKey();
     if (state.date === today) return;
-    const remaining = state.tasks.filter(t => !t.done);
+    const remaining = state.tasks.filter(t => !t.done).map(t => t.repeat ? Object.assign({}, t, { count: 0 }) : t);
     carried = remaining.length;
     state.tasks = remaining;
     state.date = today;
@@ -329,7 +332,7 @@
     let n = 0;
     st.tasks.forEach(t => {
       if (state.tasks.some(x => x.title === t.title)) return;
-      state.tasks.push({ id: uid(), title: t.title, done: false, doneAt: null, q: t.q, createdAt: Date.now() });
+      state.tasks.push({ id: uid(), title: t.title, done: false, doneAt: null, q: t.q, createdAt: Date.now(), repeat: !!t.repeat, count: 0 });
       n++;
     });
     if (doSave && n) save();
@@ -374,16 +377,22 @@
     const d = new Date();
     const days = ['日', '月', '火', '水', '木', '金', '土'];
     $('#todayDate').innerHTML = `${d.getMonth() + 1}月${d.getDate()}日<small>${days[d.getDay()]}曜日</small>`;
-    const total = state.tasks.length, done = total - undone().length;
-    $('#ringDone').textContent = done;
-    $('#ringTotal').textContent = total;
-    const ratio = total ? done / total : 0;
+    const core = state.tasks.filter(t => !t.repeat);
+    const reps = state.tasks.filter(t => t.repeat);
+    const repCount = reps.reduce((a, t) => a + (t.count || 0), 0);
+    const total = core.length, done = core.filter(t => t.done).length;
+    $('#ringDone').textContent = total ? done : repCount;
+    $('#ringTotal').textContent = total ? total : '';
+    $('#ringTotal').parentElement.hidden = !total;
+    const ratio = total ? done / total : (repCount ? 1 : 0);
     $('#ringBar').style.strokeDashoffset = String(251.3 * (1 - ratio));
     let status;
-    if (total === 0) status = 'まだ何も置いていません。';
+    if (total === 0 && reps.length === 0) status = 'まだ何も置いていません。';
+    else if (total === 0) status = repCount ? `くりかえしを ${repCount} 回。ちゃんと回っています。` : 'くりかえしのやることだけ。1 回ずつ数えます。';
     else if (done === total) status = 'きょうの分は、ぜんぶ歩きました。';
     else if (done === 0) status = `${total} 件。ひとつずつで、だいじょうぶ。`;
     else status = `あと ${total - done} 件。いい歩き方です。`;
+    if (total && repCount) status += ` くりかえし ${repCount} 回。`;
     $('#todayStatus').textContent = status;
   }
 
@@ -398,6 +407,13 @@
     if (view === 'list') renderList(); else renderQuad();
   }
 
+  const ICON_REPEAT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l3 3-3 3M20 6H9a5 5 0 0 0-5 5M7 21l-3-3 3-3M4 18h11a5 5 0 0 0 5-5"/></svg>';
+  function checkHtml(t) {
+    if (!t.repeat) return `<button type="button" class="check ${t.done ? 'is-on' : ''}" data-act="toggle" data-q="${t.q}" aria-label="${t.done ? 'まだにする' : 'できた'}" aria-pressed="${t.done}">${ICON_CHECK}</button>`;
+    const inner = t.done ? ICON_CHECK : (t.count ? `<b>${t.count}</b>` : ICON_REPEAT);
+    return `<button type="button" class="check rep ${t.done ? 'is-on' : ''} ${t.count ? 'has-count' : ''}" data-act="toggle" data-q="${t.q}" aria-label="${t.done ? 'まだにする' : '1回できた'}">${inner}</button>`;
+  }
+  function repTag(t) { return t.repeat ? `<span class="rep-tag">${t.count ? `${t.count} 回` : 'くりかえし'}</span>` : ''; }
   function taskRow(t, i, arr) {
     const q = t.q ? `<span class="q-tag q${t.q}">${QUADS[t.q].name}</span>` : '';
     const order = t.done ? '' : `
@@ -406,9 +422,9 @@
         <button type="button" data-act="down" aria-label="下へ" ${i === arr.length - 1 ? 'disabled' : ''}>${ICON_DOWN}</button>
       </div>`;
     return `
-      <li class="task ${t.done ? 'is-done' : ''}" data-id="${t.id}">
-        <button type="button" class="check ${t.done ? 'is-on' : ''}" data-act="toggle" data-q="${t.q}" aria-label="${t.done ? 'まだにする' : 'できた'}" aria-pressed="${t.done}">${ICON_CHECK}</button>
-        <button type="button" class="title" data-act="edit">${esc(t.title)}${q}</button>
+      <li class="task ${t.done ? 'is-done' : ''} ${t.repeat ? 'is-rep' : ''}" data-id="${t.id}">
+        ${checkHtml(t)}
+        <button type="button" class="title" data-act="edit">${esc(t.title)}${repTag(t)}${q}</button>
         ${order}
       </li>`;
   }
@@ -442,9 +458,9 @@
 
   function cardHtml(t) {
     return `
-      <div class="card" data-id="${t.id}" draggable="true">
-        <button type="button" class="check ${t.done ? 'is-on' : ''}" data-act="toggle" data-q="${t.q}" aria-label="できた">${ICON_CHECK}</button>
-        <button type="button" class="title" data-act="edit">${esc(t.title)}</button>
+      <div class="card ${t.repeat ? 'is-rep' : ''}" data-id="${t.id}" draggable="true">
+        ${checkHtml(t)}
+        <button type="button" class="title" data-act="edit">${esc(t.title)}${repTag(t)}</button>
       </div>`;
   }
 
@@ -486,7 +502,7 @@
     const t = String(raw || '').trim();
     if (!t) return;
     const title = t.slice(0, 120);
-    state.tasks.push({ id: uid(), title, done: false, doneAt: null, q: 0, createdAt: Date.now() });
+    state.tasks.push({ id: uid(), title, done: false, doneAt: null, q: 0, createdAt: Date.now(), repeat: isRepWord(title), count: 0 });
     state.recent = [title].concat(state.recent.filter(x => x !== title)).slice(0, RECENT_MAX);
     save(); render(); renderSuggest();
     $('#carryNotice').hidden = true;
@@ -503,16 +519,16 @@
     const placed = new Set(state.tasks.map(t => t.title));
     const seen = new Set();
     const out = [];
-    const push = (w, mine) => { if (!seen.has(w) && !placed.has(w) && out.length < SUGGEST_MAX) { seen.add(w); out.push({ w, mine: !!mine }); } };
+    const push = (w, mine, rep) => { if (!seen.has(w) && !placed.has(w) && out.length < SUGGEST_MAX) { seen.add(w); out.push({ w, mine: !!mine, rep: !!rep }); } };
     const dict = activeDictionary();
     if (q) {
       state.recent.filter(w => w.includes(q)).forEach(w => push(w, true));
-      dict.filter(d => d.w.includes(q)).forEach(d => push(d.w));
+      dict.filter(d => d.w.includes(q)).forEach(d => push(d.w, false, d.rep));
     } else {
       state.recent.slice(0, 4).forEach(w => push(w, true));
       const tb = timeBucket();
-      dict.filter(d => d.tags.includes(tb)).forEach(d => push(d.w));
-      dict.forEach(d => push(d.w));
+      dict.filter(d => d.tags.includes(tb)).forEach(d => push(d.w, false, d.rep));
+      dict.forEach(d => push(d.w, false, d.rep));
     }
     return out;
   }
@@ -523,7 +539,7 @@
     const list = suggestions(q);
     const label = q.trim() ? '' : `<span class="sug-label">${{ asa: 'あさの', hiru: 'ひるの', yoru: 'よるの' }[timeBucket()]}おすすめ</span>`;
     $('#suggestRow').innerHTML = label
-      + list.map(x => `<button type="button" class="sug ${x.mine ? 'mine' : ''}" role="option" data-w="${esc(x.w)}">${esc(x.w)}</button>`).join('')
+      + list.map(x => `<button type="button" class="sug ${x.mine ? 'mine' : ''}" role="option" data-w="${esc(x.w)}">${esc(x.w)}${x.rep ? '<i class="rep-mark">↻</i>' : ''}</button>`).join('')
       + `<button type="button" class="sug more" data-more="1">${q.trim() && !list.length ? 'Enter で追加' : 'もっと…'}</button>`;
     $('#suggestRow').scrollLeft = 0;
   }
@@ -553,9 +569,21 @@
   }
   function findTask(id) { return state.tasks.find(t => t.id === id); }
 
+  const REP_WORDS = ['いいペース。', 'ちゃんと回っています。', 'ひとつ、また。', 'その手が、だいじ。'];
+  function bumpRepeat(t, el) {
+    t.count = Math.min(999, (t.count || 0) + 1);
+    save();
+    if (state.settings.celebrate) {
+      toast(`${t.title}、${t.count} 回目。${t.count % 3 === 0 ? ' ' + REP_WORDS[Math.floor(Math.random() * REP_WORDS.length)] : ''}`);
+      if (!reduceMotion() && el) { const r = el.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, 14, 3.5); }
+    }
+    if (el) { el.classList.add('pop'); el.innerHTML = `<b>${t.count}</b>`; el.classList.add('has-count'); }
+    setTimeout(render, 320);
+  }
   function toggleDone(id, el) {
     const t = findTask(id);
     if (!t) return;
+    if (t.repeat && !t.done) { bumpRepeat(t, el); return; }
     t.done = !t.done;
     t.doneAt = t.done ? Date.now() : null;
     if (!t.done) {
@@ -567,7 +595,7 @@
     // 完了の見た目を一瞬見せてから描き直す
     if (el) { el.classList.toggle('is-on', t.done); el.classList.add('pop'); }
     setTimeout(render, t.done ? 380 : 0);
-    if (t.done && undone().length === 0) setTimeout(finale, 650);
+    if (t.done && !undone().some(x => !x.repeat)) setTimeout(finale, 650);
   }
 
   function move(id, dir) {
@@ -643,14 +671,42 @@
     if (!t) return;
     editingId = id;
     pendingQ = t.q || 0;
+    pendingRep = !!t.repeat;
     $('#taskTitle').value = t.title;
-    paintQPicker();
+    paintQPicker(); paintRepRow();
     taskSheet.showModal();
     setTimeout(() => { $('#taskTitle').focus(); }, 50);
   }
   function paintQPicker() {
     $$('.q-opt').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.q) === pendingQ)));
   }
+  let pendingRep = false;
+  function paintRepRow() {
+    const t = findTask(editingId);
+    $$('#repPicker .chip').forEach(c => c.setAttribute('aria-pressed', String((c.dataset.rep === 'on') === pendingRep)));
+    const tools = $('#repTools');
+    tools.hidden = !(pendingRep && t && t.repeat);
+    if (t) {
+      $('#repCount').textContent = t.count || 0;
+      $('#repUndo').disabled = !(t.count > 0);
+      $('#repFinish').hidden = !!t.done;
+    }
+  }
+  $('#repPicker').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    pendingRep = b.dataset.rep === 'on'; paintRepRow();
+  });
+  $('#repUndo').addEventListener('click', () => {
+    const t = findTask(editingId); if (!t || !t.count) return;
+    t.count -= 1; save(); render(); paintRepRow();
+    toast(`${t.title}、${t.count} 回にもどしました。`);
+  });
+  $('#repFinish').addEventListener('click', () => {
+    const t = findTask(editingId); if (!t) return;
+    t.done = true; t.doneAt = Date.now(); save(); render(); taskSheet.close();
+    toast(`${t.title}、きょうは ${t.count || 0} 回。おつかれさま。`);
+    if (!undone().some(x => !x.repeat) && state.tasks.some(x => !x.repeat)) setTimeout(finale, 500);
+  });
   $('#qPicker').addEventListener('click', e => {
     const b = e.target.closest('.q-opt'); if (!b) return;
     pendingQ = Number(b.dataset.q); paintQPicker();
@@ -659,7 +715,11 @@
     e.preventDefault();
     const t = findTask(editingId);
     const title = $('#taskTitle').value.trim();
-    if (t && title) { t.title = title.slice(0, 120); t.q = pendingQ; save(); render(); }
+    if (t && title) {
+      t.title = title.slice(0, 120); t.q = pendingQ;
+      if (t.repeat !== pendingRep) { t.repeat = pendingRep; if (!pendingRep) t.count = 0; }
+      save(); render();
+    }
     taskSheet.close();
   });
   $('#taskCancel').addEventListener('click', () => taskSheet.close());
@@ -917,7 +977,7 @@
               <span class="set-count">${st.tasks.length} 件</span>
               <button type="button" class="chip small" data-act="place">きょうに置く</button>
             </div>
-            <div class="set-tasks">${st.tasks.map(t => `<span><i class="q${t.q}"></i>${esc(t.title)}</span>`).join('') || '<span>（からっぽ）</span>'}</div>
+            <div class="set-tasks">${st.tasks.map(t => `<span><i class="q${t.q}"></i>${esc(t.title)}${t.repeat ? ' ↻' : ''}</span>`).join('') || '<span>（からっぽ）</span>'}</div>
             <div class="set-foot">
               ${daysHtml(st.days, `data-days-of="${st.id}"`)}
               <span class="spacer"></span>
@@ -953,7 +1013,7 @@
     if (!name) { toast('セットの名前を入れてください。'); return; }
     if (!u.length) { toast('きょうの一覧に、まだのものがありません。'); return; }
     if (state.sets.length >= 20) { toast('セットは 20 個までです。'); return; }
-    const tasks = u.map(t => ({ title: t.title, q: t.q }));
+    const tasks = u.map(t => ({ title: t.title, q: t.q, repeat: !!t.repeat }));
     const existing = state.sets.find(st => st.name === name);
     if (existing) {
       if (!(await ask({ title: `「${name}」はすでにあります`, text: `中身を、いまの「まだ」${u.length} 件で置きかえますか？`, ok: '置きかえる' }))) return;
@@ -988,7 +1048,7 @@
         const u = undone();
         if (!u.length) { toast('きょうの一覧に、まだのものがありません。'); return; }
         if (!(await ask({ title: `「${st.name}」を、いまの一覧で更新しますか？`, text: `いまの「まだ」${u.length} 件に置きかわります。曜日の設定はそのままです。`, ok: '更新する' }))) return;
-        st.tasks = u.map(t => ({ title: t.title, q: t.q })); save(); paintSets(); toast('更新しました。'); break;
+        st.tasks = u.map(t => ({ title: t.title, q: t.q, repeat: !!t.repeat })); save(); paintSets(); toast('更新しました。'); break;
       }
       case 'delete':
         if (!(await ask({ title: `「${st.name}」を消しますか？`, text: 'きょうの一覧に置いたものは残ります。', ok: '消す', danger: true }))) return;

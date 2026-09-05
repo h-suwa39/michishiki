@@ -262,6 +262,22 @@ body.wide .top, body.wide .app { max-width: 1040px; }
 .check.is-on svg { opacity: 1; transform: scale(1); }
 .check.pop { animation: pop .5s var(--ease); }
 @keyframes pop { 40% { transform: scale(1.25); } }
+/* くりかえし：丸の中に回数 */
+.check.rep { border-style: dashed; }
+.check.rep svg { opacity: .9; transform: none; width: 15px; height: 15px; stroke-width: 2; color: var(--muted); }
+.check.rep.has-count { border-style: solid; background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+.check.rep b { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--accent-ink); line-height: 1; }
+.check.rep.is-on { background: var(--accent); border-color: var(--accent); border-style: solid; }
+.check.rep.is-on svg { color: #fff; opacity: 1; }
+.rep-tag {
+  display: inline-block; font-size: 11px; font-weight: 600; margin-left: 8px; padding: 1px 8px; border-radius: 999px;
+  vertical-align: middle; color: var(--accent-ink); background: var(--accent-soft);
+}
+.rep-mark { font-style: normal; margin-left: 4px; color: var(--muted); font-size: 12px; }
+.rep-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rep-now { font-size: 14px; color: var(--muted); margin-right: 4px; }
+.rep-now b { color: var(--text); font-family: var(--font-display); font-size: 16px; }
+.chip:disabled { opacity: .4; cursor: default; }
 
 .title {
   text-align: left; font-size: 16px; line-height: 1.45; padding: 4px 2px; border-radius: var(--radius-s);

@@ -179,6 +179,19 @@
         <button type="button" class="q-opt q0" data-q="0"><b>まだ決めない</b><small>あとで分ける</small></button>
       </div>
     </fieldset>
+    <fieldset class="field">
+      <legend class="field-label">くりかえし</legend>
+      <p class="field-help">おむつ替えやミルクのように、1日に何回もあること。丸をタップするごとに回数が増え、行はそのまま残ります。</p>
+      <div class="chips" id="repPicker">
+        <button type="button" class="chip" data-rep="off">1回きり</button>
+        <button type="button" class="chip" data-rep="on">くりかえし（回数を数える）</button>
+      </div>
+      <div class="rep-tools" id="repTools" hidden>
+        <span class="rep-now">きょう <b id="repCount">0</b> 回</span>
+        <button type="button" class="chip small" id="repUndo">1回もどす</button>
+        <button type="button" class="chip small" id="repFinish">きょうはここまで</button>
+      </div>
+    </fieldset>
     <div class="sheet-actions">
       <button type="button" class="danger-btn" id="taskDelete">削除</button>
       <span class="spacer"></span>

@@ -379,16 +379,28 @@ body.wide .top, body.wide .app { max-width: 1040px; }
 .dict-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 /* よく使うことば */
-.dict-head { display: grid; gap: 4px; }
-.dict-head .field-help { margin: 0; }
-.dict-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-.dict-tabs::-webkit-scrollbar { display: none; }
+.dict-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dict-mine {
+  padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted);
+  background: var(--bg); border: 1.5px solid var(--border); transition: background-color .2s, color .2s, border-color .2s;
+}
+.dict-mine[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+.dict-mine span { font-variant-numeric: tabular-nums; opacity: .8; }
+.dict-filters { display: grid; gap: 8px; transition: opacity .2s; }
+.dict-filters.is-muted { opacity: .45; }
+.dict-row { display: grid; grid-template-columns: 34px 1fr; align-items: start; gap: 8px; }
+.dict-row-label { font-size: 11px; font-weight: 600; letter-spacing: .12em; color: var(--muted); padding-top: 9px; }
+.dict-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .dict-tab {
-  flex: none; padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--muted);
+  padding: 7px 13px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--muted);
   background: var(--bg); border: 1.5px solid transparent; transition: background-color .2s, color .2s, border-color .2s;
 }
-.dict-tab[aria-selected="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
-.dict-body { min-height: 180px; }
+.dict-tab:hover { color: var(--text); }
+.dict-tab[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+.dict-result { display: grid; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+.dict-label { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .08em; color: var(--muted); display: flex; align-items: baseline; gap: 8px; }
+.dict-label small { font-weight: 500; font-variant-numeric: tabular-nums; opacity: .8; }
+.dict-body { min-height: 120px; max-height: 38dvh; overflow-y: auto; padding-right: 2px; }
 .dict-words { display: flex; flex-wrap: wrap; gap: 8px; }
 .word {
   padding: 9px 14px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--bg);

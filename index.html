@@ -98,10 +98,17 @@
     <div class="sheet-handle" aria-hidden="true"></div>
     <div class="dict-head">
       <h3 id="dictTitle" class="sheet-title">よく使うことば</h3>
-      <p class="field-help">タップするとそのまま置けます。いくつでも。</p>
+      <button type="button" class="dict-mine" id="dictMine" aria-pressed="false">じぶんのことば <span id="dictMineCount"></span></button>
     </div>
-    <div class="dict-tabs" id="dictTabs" role="tablist"></div>
-    <div class="dict-body" id="dictBody"></div>
+    <div class="dict-filters" id="dictFilters">
+      <div class="dict-row"><span class="dict-row-label">いつ</span><div class="dict-chips" id="dictTimeRow"></div></div>
+      <div class="dict-row"><span class="dict-row-label">なに</span><div class="dict-chips" id="dictSceneRow"></div></div>
+    </div>
+    <div class="dict-result">
+      <p class="dict-label" id="dictLabel"></p>
+      <div class="dict-body" id="dictBody"></div>
+    </div>
+    <p class="field-help">タップするとそのまま置けます。いくつでも。「いつ」と「なに」は掛け合わせて絞れます。</p>
     <div class="sheet-actions">
       <span class="spacer"></span>
       <button type="button" class="primary-btn" id="dictClose">閉じる</button>

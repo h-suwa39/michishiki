@@ -24,13 +24,87 @@
   };
 
 
-  /* よく使うことば。家のこと・子どものことを中心に、手で打たなくても置けるように */
+  /* よく使うことば。ひとつの言葉に複数のタグを持たせ、「いつ」と「なに」の掛け合わせで絞れる */
+  const DICT_TIME = [
+    { id: 'asa',      name: 'あさ' },
+    { id: 'hiru',     name: 'ひる' },
+    { id: 'yoru',     name: 'よる' },
+    { id: 'tokidoki', name: 'ときどき' },
+  ];
+  const DICT_SCENE = [
+    { id: 'kodomo',    name: 'こどもと' },
+    { id: 'gohan',     name: 'ごはん' },
+    { id: 'ouchi',     name: 'おうちのこと' },
+    { id: 'jibun',     name: 'じぶんのこと' },
+    { id: 'odekake',   name: 'おでかけ' },
+    { id: 'tetsuzuki', name: '手続き・れんらく' },
+  ];
+  const DICT_GROUPS = DICT_TIME.concat(DICT_SCENE);
+  const W = (w, ...tags) => ({ w, tags });
   const DICTIONARY = [
-    { id: 'gohan', name: 'ごはん', words: ['朝ごはんの準備', 'お昼ごはんの準備', '晩ごはんの準備', '献立を考える', '買い物', 'お弁当づくり', '食器を洗う', 'ミルク', '離乳食', 'おやつ'] },
-    { id: 'kodomo', name: 'こども', words: ['おむつ替え', 'お着がえ', 'お風呂に入れる', '寝かしつけ', '保育園の送り', '保育園のお迎え', '連絡帳を書く', '絵本を読む', '公園に行く', '予防接種の予約', '爪を切る', '習いごとの送迎'] },
-    { id: 'ie', name: 'いえのこと', words: ['洗濯をまわす', '洗濯物を干す', '洗濯物をたたむ', '掃除機をかける', 'ゴミを出す', 'トイレそうじ', 'お風呂そうじ', '布団を干す', '郵便を確認する', '植物に水をやる'] },
-    { id: 'jibun', name: 'じぶん', words: ['散歩', '薬をのむ', '水を飲む', 'ひと休み', 'ストレッチ', '病院の予約', '友だちに連絡', '好きな音楽を聴く', '早く寝る'] },
-    { id: 'soto', name: 'そと・手続き', words: ['銀行・振込', '役所の手続き', '宅配を受け取る', '学校のプリント確認', '返信するメール', '電話をかける', '支払い'] },
+    // ごはん
+    W('朝ごはんの準備', 'asa', 'gohan'),
+    W('お弁当づくり', 'asa', 'gohan'),
+    W('お昼ごはんの準備', 'hiru', 'gohan'),
+    W('献立を考える', 'hiru', 'gohan'),
+    W('買い物', 'hiru', 'gohan', 'odekake'),
+    W('晩ごはんの準備', 'yoru', 'gohan'),
+    W('食器を洗う', 'asa', 'yoru', 'gohan', 'ouchi'),
+    W('ミルク', 'asa', 'hiru', 'yoru', 'kodomo', 'gohan'),
+    W('離乳食', 'asa', 'hiru', 'yoru', 'kodomo', 'gohan'),
+    W('おやつ', 'hiru', 'kodomo', 'gohan'),
+    // こどもと
+    W('検温', 'asa', 'kodomo'),
+    W('おむつ替え', 'asa', 'hiru', 'yoru', 'kodomo'),
+    W('お着がえ', 'asa', 'yoru', 'kodomo'),
+    W('連絡帳を書く', 'asa', 'kodomo', 'tetsuzuki'),
+    W('保育園の送り', 'asa', 'kodomo', 'odekake'),
+    W('保育園のお迎え', 'yoru', 'kodomo', 'odekake'),
+    W('公園に行く', 'hiru', 'kodomo', 'odekake'),
+    W('習いごとの送迎', 'hiru', 'kodomo', 'odekake'),
+    W('図書館に行く', 'hiru', 'kodomo', 'odekake'),
+    W('お風呂に入れる', 'yoru', 'kodomo'),
+    W('絵本を読む', 'yoru', 'kodomo'),
+    W('寝かしつけ', 'yoru', 'kodomo'),
+    W('明日の持ち物の確認', 'yoru', 'kodomo'),
+    W('学校のプリント確認', 'yoru', 'kodomo', 'tetsuzuki'),
+    W('予防接種の予約', 'tokidoki', 'kodomo', 'tetsuzuki'),
+    W('爪を切る', 'tokidoki', 'kodomo', 'jibun'),
+    // おうちのこと
+    W('洗濯をまわす', 'asa', 'ouchi'),
+    W('洗濯物を干す', 'asa', 'ouchi'),
+    W('ゴミを出す', 'asa', 'ouchi'),
+    W('植物に水をやる', 'asa', 'ouchi'),
+    W('洗濯物をたたむ', 'hiru', 'yoru', 'ouchi'),
+    W('掃除機をかける', 'hiru', 'ouchi'),
+    W('郵便を確認する', 'hiru', 'ouchi', 'tetsuzuki'),
+    W('宅配を受け取る', 'hiru', 'ouchi'),
+    W('お風呂そうじ', 'yoru', 'ouchi'),
+    W('布団を敷く', 'yoru', 'ouchi'),
+    W('翌日の準備', 'yoru', 'ouchi'),
+    W('トイレそうじ', 'tokidoki', 'ouchi'),
+    W('布団を干す', 'tokidoki', 'ouchi'),
+    W('冷蔵庫の中を見る', 'tokidoki', 'ouchi', 'gohan'),
+    // じぶんのこと
+    W('薬をのむ', 'asa', 'yoru', 'jibun'),
+    W('水を飲む', 'asa', 'hiru', 'yoru', 'jibun'),
+    W('ストレッチ', 'asa', 'yoru', 'jibun'),
+    W('散歩', 'asa', 'hiru', 'jibun', 'odekake'),
+    W('ひと休み', 'hiru', 'jibun'),
+    W('好きな音楽を聴く', 'hiru', 'yoru', 'jibun'),
+    W('友だちに連絡', 'hiru', 'jibun', 'tetsuzuki'),
+    W('日記を書く', 'yoru', 'jibun'),
+    W('早く寝る', 'yoru', 'jibun'),
+    W('病院の予約', 'tokidoki', 'jibun', 'tetsuzuki'),
+    W('美容院の予約', 'tokidoki', 'jibun', 'tetsuzuki'),
+    // おでかけ・手続き
+    W('ドラッグストアに行く', 'hiru', 'odekake'),
+    W('銀行・振込', 'hiru', 'tetsuzuki', 'odekake'),
+    W('返信するメール', 'hiru', 'tetsuzuki'),
+    W('電話をかける', 'hiru', 'tetsuzuki'),
+    W('役所の手続き', 'tokidoki', 'tetsuzuki', 'odekake'),
+    W('支払い', 'tokidoki', 'tetsuzuki'),
+    W('車にガソリンを入れる', 'tokidoki', 'odekake'),
   ];
   const RECENT_MAX = 40;
 
@@ -280,7 +354,7 @@
   function renderSuggest() {
     const seen = new Set();
     const words = [];
-    state.recent.concat(DICTIONARY.flatMap(c => c.words)).forEach(w => { if (!seen.has(w)) { seen.add(w); words.push(w); } });
+    state.recent.concat(DICTIONARY.map(d => d.w)).forEach(w => { if (!seen.has(w)) { seen.add(w); words.push(w); } });
     $('#suggestList').innerHTML = words.slice(0, 80).map(w => `<option value="${esc(w)}"></option>`).join('');
   }
   function findTask(id) { return state.tasks.find(t => t.id === id); }
@@ -439,23 +513,49 @@
 
   // ---------- よく使うことば ----------
   const dictSheet = $('#dictSheet');
-  let dictTab = 'mine';
+  const dictSel = { mine: false, time: null, scene: null };
   function openDict() {
-    dictTab = state.recent.length ? 'mine' : DICTIONARY[0].id;
+    dictSel.mine = false; dictSel.time = null; dictSel.scene = null;
     paintDict();
     dictSheet.showModal();
   }
+  function dictWords() {
+    if (dictSel.mine) return state.recent;
+    return DICTIONARY
+      .filter(d => (!dictSel.time || d.tags.includes(dictSel.time)) && (!dictSel.scene || d.tags.includes(dictSel.scene)))
+      .map(d => d.w);
+  }
   function paintDict() {
-    const tabs = [{ id: 'mine', name: 'じぶんのことば' }].concat(DICTIONARY);
-    $('#dictTabs').innerHTML = tabs.map(t => `<button type="button" role="tab" class="dict-tab" data-tab="${t.id}" aria-selected="${t.id === dictTab}">${t.name}</button>`).join('');
-    let words = dictTab === 'mine' ? state.recent : (DICTIONARY.find(c => c.id === dictTab) || DICTIONARY[0]).words;
+    const chip = (g, kind, on) => `<button type="button" class="dict-tab" data-kind="${kind}" data-id="${g.id}" aria-pressed="${on}">${g.name}</button>`;
+    $('#dictMine').setAttribute('aria-pressed', String(dictSel.mine));
+    $('#dictMineCount').textContent = state.recent.length ? state.recent.length : '';
+    $('#dictTimeRow').innerHTML = DICT_TIME.map(g => chip(g, 'time', !dictSel.mine && dictSel.time === g.id)).join('');
+    $('#dictSceneRow').innerHTML = DICT_SCENE.map(g => chip(g, 'scene', !dictSel.mine && dictSel.scene === g.id)).join('');
+    $('#dictFilters').classList.toggle('is-muted', dictSel.mine);
+
+    const words = dictWords();
+    const nameOf = id => (DICT_GROUPS.find(g => g.id === id) || {}).name || '';
+    let label;
+    if (dictSel.mine) label = 'じぶんのことば';
+    else if (dictSel.time && dictSel.scene) label = `${nameOf(dictSel.time)} × ${nameOf(dictSel.scene)}`;
+    else if (dictSel.time || dictSel.scene) label = nameOf(dictSel.time || dictSel.scene);
+    else label = 'すべて';
+    $('#dictLabel').innerHTML = `${esc(label)}<small>${words.length}</small>`;
+
+    let empty;
+    if (dictSel.mine) empty = '自分で入れたことばが、ここにたまっていきます。';
+    else empty = 'この組み合わせには、まだことばがありません。片方をはずしてみてください。';
     $('#dictBody').innerHTML = words.length
       ? `<div class="dict-words">${words.map(w => `<button type="button" class="word" data-word="${esc(w)}" aria-pressed="${hasToday(w)}">${esc(w)}</button>`).join('')}</div>`
-      : `<p class="word-empty">自分で入れたことばが、ここにたまっていきます。</p>`;
+      : `<p class="word-empty">${empty}</p>`;
   }
-  $('#dictTabs').addEventListener('click', e => {
+  $('#dictMine').addEventListener('click', () => { dictSel.mine = !dictSel.mine; paintDict(); });
+  $('#dictFilters').addEventListener('click', e => {
     const b = e.target.closest('.dict-tab'); if (!b) return;
-    dictTab = b.dataset.tab; paintDict();
+    dictSel.mine = false;
+    const k = b.dataset.kind, id = b.dataset.id;
+    dictSel[k] = dictSel[k] === id ? null : id;   // 同じものをもう一度押すと解除
+    paintDict();
   });
   $('#dictBody').addEventListener('click', e => {
     const b = e.target.closest('.word'); if (!b) return;
@@ -463,6 +563,7 @@
     if (hasToday(w)) { toast('もう置いてあります。'); return; }
     addTask(w);
     b.setAttribute('aria-pressed', 'true');
+    $('#dictMineCount').textContent = state.recent.length;
     toast(`「${w}」を置きました。`);
   });
   $('#dictBtn').addEventListener('click', openDict);

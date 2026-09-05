@@ -262,13 +262,28 @@ body.wide .top, body.wide .app { max-width: 1040px; }
 .check.is-on svg { opacity: 1; transform: scale(1); }
 .check.pop { animation: pop .5s var(--ease); }
 @keyframes pop { 40% { transform: scale(1.25); } }
-/* くりかえし：丸の中に回数 */
+/* くりかえし：丸は点線。回数は行の中のステッパー */
 .check.rep { border-style: dashed; }
-.check.rep svg { opacity: .9; transform: none; width: 15px; height: 15px; stroke-width: 2; color: var(--muted); }
-.check.rep.has-count { border-style: solid; background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
-.check.rep b { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--accent-ink); line-height: 1; }
-.check.rep.is-on { background: var(--accent); border-color: var(--accent); border-style: solid; }
-.check.rep.is-on svg { color: #fff; opacity: 1; }
+.check.rep.is-on { border-style: solid; }
+.mid { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; min-width: 0; }
+.mid .title { flex: 1 1 auto; min-width: 0; }
+.stepper {
+  display: inline-flex; align-items: center; gap: 2px; flex: none;
+  background: var(--accent-soft); border-radius: 999px; padding: 2px 4px;
+}
+.stepper button {
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 16px; font-weight: 700; color: var(--accent-ink); line-height: 1;
+  transition: background-color .15s, transform .15s var(--ease);
+}
+.stepper button:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.stepper button:active { transform: scale(.92); }
+.stepper button:disabled { opacity: .3; cursor: default; }
+.stepper b { font-family: var(--font-display); font-size: 15px; color: var(--accent-ink); min-width: 1.2em; text-align: center; font-variant-numeric: tabular-nums; }
+.stepper small { font-size: 11px; color: var(--accent-ink); margin-right: 2px; }
+.stepper.pop { animation: pop .4s var(--ease); }
+.card .stepper button { width: 24px; height: 24px; font-size: 14px; }
+.card .stepper b { font-size: 13px; }
 .rep-tag {
   display: inline-block; font-size: 11px; font-weight: 600; margin-left: 8px; padding: 1px 8px; border-radius: 999px;
   vertical-align: middle; color: var(--accent-ink); background: var(--accent-soft);

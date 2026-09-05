@@ -108,7 +108,14 @@
       <p class="dict-label" id="dictLabel"></p>
       <div class="dict-body" id="dictBody"></div>
     </div>
-    <p class="field-help">タップするとそのまま置けます。いくつでも。「いつ」と「なに」は掛け合わせて絞れます。</p>
+    <form class="custom-form" id="customForm" autocomplete="off">
+      <div class="custom-row">
+        <input type="text" id="customWord" maxlength="60" placeholder="辞書にことばを足す" aria-label="辞書に足すことば">
+        <button type="submit" class="chip">足す</button>
+      </div>
+      <div class="dict-chips" id="customTags" aria-label="このことばのグループ"></div>
+    </form>
+    <p class="field-help">タップするとそのまま置けます。「いつ」と「なに」は掛け合わせて絞れます。こどもやペットの名前は <button type="button" class="link-btn" id="dictToSettings">設定の「くらしのかたち」</button> から。</p>
     <div class="sheet-actions">
       <span class="spacer"></span>
       <button type="button" class="primary-btn" id="dictClose">閉じる</button>
@@ -149,6 +156,25 @@
   <div class="sheet-body">
     <div class="sheet-handle" aria-hidden="true"></div>
     <h3 id="settingsTitle" class="sheet-title">設定</h3>
+
+    <fieldset class="field" id="household">
+      <legend class="field-label">くらしのかたち</legend>
+      <p class="field-help">「よく使うことば」の中身が、あなたの家に合わせて変わります。名前を入れると「はなの検温」のように人数分に増えます。名前は入れなくても大丈夫です。</p>
+      <div class="hh-row">
+        <span class="hh-label">こども</span>
+        <div class="chips" id="kidsToggle"><button type="button" class="chip" data-on="on">いる</button><button type="button" class="chip" data-on="off">いない</button></div>
+      </div>
+      <div id="kidsNames"></div>
+      <div class="hh-row">
+        <span class="hh-label">パートナー</span>
+        <div class="chips" id="partnerToggle"><button type="button" class="chip" data-on="on">いる</button><button type="button" class="chip" data-on="off">いない</button></div>
+      </div>
+      <div class="name-add" id="partnerName" hidden><input type="text" id="partnerNameInput" maxlength="20" placeholder="呼び方（夫、妻、名前 など）" aria-label="パートナーの呼び方"></div>
+      <div class="hh-row"><span class="hh-label">同居の家族</span></div>
+      <div id="familyNames"></div>
+      <div class="hh-row"><span class="hh-label">ペット</span></div>
+      <div id="petNames"></div>
+    </fieldset>
 
     <fieldset class="field">
       <legend class="field-label">色のテーマ</legend>
@@ -204,7 +230,7 @@
       <path d="M8 6.5 H 22 L 26.25 10.75 L 22 15 H 8 Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
       <circle cx="12" cy="10.75" r="1.6" fill="var(--panel)"/>
     </svg>
-    <h3 id="finaleTitle">きょうも、がんばってくれて<wbr>ありがとう。</h3>
+    <h3 id="finaleTitle">きょうも、がんばってくれてありがとう。</h3>
     <p id="finaleSub">ここまで来た自分に、ひと息。</p>
     <button type="button" class="primary-btn" id="finaleClose">こちらこそ</button>
   </div>

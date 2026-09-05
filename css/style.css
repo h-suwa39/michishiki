@@ -412,6 +412,38 @@ body.wide .top, body.wide .app { max-width: 1040px; }
 .word[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
 .word[aria-pressed="true"]::before { content: "✓ "; font-weight: 700; }
 .word-empty { color: var(--muted); font-size: 14px; margin: 12px 0; }
+.word-wrap { display: inline-flex; align-items: center; }
+.word.is-custom { border-style: dashed; }
+.word-x {
+  width: 26px; height: 26px; margin-left: -6px; border-radius: 50%; color: var(--muted); font-size: 14px; line-height: 1;
+  display: grid; place-items: center;
+}
+.word-x:hover { background: var(--panel-2); color: var(--text); }
+.dict-tab.small { padding: 5px 10px; font-size: 12px; }
+.custom-form { display: grid; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+.custom-row { display: flex; gap: 8px; }
+.custom-row input {
+  flex: 1; min-width: 0; height: 40px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); padding: 0 14px; font-size: 15px;
+}
+.custom-row input:focus { border-color: var(--accent); outline: none; }
+.link-btn { color: var(--accent-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; font-size: inherit; }
+
+/* くらしのかたち */
+.hh-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hh-label { font-size: 14px; font-weight: 600; }
+.names { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.name-chip {
+  display: inline-flex; align-items: center; gap: 2px; padding: 4px 6px 4px 12px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-ink); font-size: 14px; font-weight: 600;
+}
+.name-x { width: 22px; height: 22px; border-radius: 50%; color: inherit; opacity: .7; display: grid; place-items: center; font-size: 13px; }
+.name-x:hover { opacity: 1; background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.name-add { display: flex; gap: 6px; flex: 1; min-width: 200px; }
+.name-add input {
+  flex: 1; min-width: 0; height: 36px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); padding: 0 12px; font-size: 14px;
+}
+.name-add input:focus { border-color: var(--accent); outline: none; }
+.name-add .chip { padding: 6px 12px; font-size: 13px; }
 
 /* ---------- シート（ダイアログ） ---------- */
 dialog { color: var(--text); }

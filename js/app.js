@@ -33,6 +33,7 @@
   ];
   const DICT_SCENE = [
     { id: 'kodomo',    name: 'こどもと' },
+    { id: 'kazoku',    name: 'かぞく・ペット' },
     { id: 'gohan',     name: 'ごはん' },
     { id: 'ouchi',     name: 'おうちのこと' },
     { id: 'jibun',     name: 'じぶんのこと' },
@@ -40,7 +41,21 @@
     { id: 'tetsuzuki', name: '手続き・れんらく' },
   ];
   const DICT_GROUPS = DICT_TIME.concat(DICT_SCENE);
-  const W = (w, ...tags) => ({ w, tags });
+
+  /* くらしのかたち：辞書の言葉に差し込む役割。
+     {こども} のように書いた言葉は、名前があれば人数分に展開し、無ければ fb（または一般の呼び名）に置きかえる */
+  const ROLES = {
+    'こども':     { key: 'kids',    on: h => h.kidsOn,     names: h => h.kids,   generic: () => 'こども' },
+    'パートナー': { key: 'partner', on: h => h.partnerOn,  names: h => (h.partnerName ? [h.partnerName] : []), generic: () => 'パートナー' },
+    'かぞく':     { key: 'family',  on: h => h.family.length > 0, names: h => h.family, generic: () => '家族' },
+    'ペット':     { key: 'pets',    on: h => h.pets.length > 0,   names: h => h.pets,   generic: () => 'ペット' },
+  };
+  const PH_RE = /\{(こども|パートナー|かぞく|ペット)\}/;
+
+  const W = (w, ...tags) => {
+    const opt = typeof tags[tags.length - 1] === 'object' ? tags.pop() : {};
+    return Object.assign({ w, tags }, opt);
+  };
   const DICTIONARY = [
     // ごはん
     W('朝ごはんの準備', 'asa', 'gohan'),
@@ -53,23 +68,41 @@
     W('ミルク', 'asa', 'hiru', 'yoru', 'kodomo', 'gohan'),
     W('離乳食', 'asa', 'hiru', 'yoru', 'kodomo', 'gohan'),
     W('おやつ', 'hiru', 'kodomo', 'gohan'),
-    // こどもと
-    W('検温', 'asa', 'kodomo'),
-    W('おむつ替え', 'asa', 'hiru', 'yoru', 'kodomo'),
-    W('お着がえ', 'asa', 'yoru', 'kodomo'),
-    W('連絡帳を書く', 'asa', 'kodomo', 'tetsuzuki'),
+    // こどもと（名前を入れると人数分に増える）
+    W('{こども}の検温', 'asa', 'kodomo', { fb: '検温' }),
+    W('{こども}のおむつ替え', 'asa', 'hiru', 'yoru', 'kodomo', { fb: 'おむつ替え' }),
+    W('{こども}のお着がえ', 'asa', 'yoru', 'kodomo', { fb: 'お着がえ' }),
+    W('{こども}の連絡帳を書く', 'asa', 'kodomo', 'tetsuzuki', { fb: '連絡帳を書く' }),
     W('保育園の送り', 'asa', 'kodomo', 'odekake'),
     W('保育園のお迎え', 'yoru', 'kodomo', 'odekake'),
     W('公園に行く', 'hiru', 'kodomo', 'odekake'),
+    W('{こども}と遊ぶ', 'hiru', 'kodomo', { fb: 'こどもと遊ぶ' }),
     W('習いごとの送迎', 'hiru', 'kodomo', 'odekake'),
     W('図書館に行く', 'hiru', 'kodomo', 'odekake'),
-    W('お風呂に入れる', 'yoru', 'kodomo'),
-    W('絵本を読む', 'yoru', 'kodomo'),
-    W('寝かしつけ', 'yoru', 'kodomo'),
-    W('明日の持ち物の確認', 'yoru', 'kodomo'),
+    W('{こども}をお風呂に入れる', 'yoru', 'kodomo', { fb: 'お風呂に入れる' }),
+    W('{こども}に絵本を読む', 'yoru', 'kodomo', { fb: '絵本を読む' }),
+    W('{こども}の話を聞く', 'yoru', 'kodomo', { fb: 'こどもの話を聞く' }),
+    W('{こども}の寝かしつけ', 'yoru', 'kodomo', { fb: '寝かしつけ' }),
+    W('{こども}の明日の持ち物', 'yoru', 'kodomo', { fb: '明日の持ち物の確認' }),
     W('学校のプリント確認', 'yoru', 'kodomo', 'tetsuzuki'),
-    W('予防接種の予約', 'tokidoki', 'kodomo', 'tetsuzuki'),
-    W('爪を切る', 'tokidoki', 'kodomo', 'jibun'),
+    W('{こども}の予防接種の予約', 'tokidoki', 'kodomo', 'tetsuzuki', { fb: '予防接種の予約' }),
+    W('{こども}の爪を切る', 'tokidoki', 'kodomo', { fb: '爪を切る' }),
+    // かぞく・ペット（設定で「いる」にしたときだけ出る）
+    W('{パートナー}のお弁当', 'asa', 'gohan', 'kazoku'),
+    W('{パートナー}に予定を伝える', 'yoru', 'kazoku', 'tetsuzuki'),
+    W('{パートナー}に買い物を頼む', 'hiru', 'kazoku', 'tetsuzuki'),
+    W('{パートナー}と話す時間', 'yoru', 'kazoku'),
+    W('{かぞく}の様子を見る', 'asa', 'yoru', 'kazoku'),
+    W('{かぞく}の薬の確認', 'asa', 'yoru', 'kazoku'),
+    W('{かぞく}のごはん', 'hiru', 'gohan', 'kazoku'),
+    W('{かぞく}と話す', 'hiru', 'kazoku'),
+    W('{かぞく}の通院の付き添い', 'tokidoki', 'kazoku', 'odekake'),
+    W('{ペット}のごはん', 'asa', 'yoru', 'kazoku', 'gohan'),
+    W('{ペット}の水をかえる', 'asa', 'kazoku'),
+    W('{ペット}の散歩', 'asa', 'yoru', 'kazoku', 'odekake'),
+    W('{ペット}のトイレそうじ', 'asa', 'ouchi', 'kazoku'),
+    W('{ペット}と遊ぶ', 'hiru', 'kazoku'),
+    W('{ペット}の通院', 'tokidoki', 'kazoku', 'odekake'),
     // おうちのこと
     W('洗濯をまわす', 'asa', 'ouchi'),
     W('洗濯物を干す', 'asa', 'ouchi'),
@@ -106,6 +139,27 @@
     W('支払い', 'tokidoki', 'tetsuzuki'),
     W('車にガソリンを入れる', 'tokidoki', 'odekake'),
   ];
+
+  /* 役割を展開して、いま表示すべき言葉の一覧にする（自分で足した言葉も含む） */
+  function expandWord(d, h) {
+    const m = d.w.match(PH_RE);
+    if (!m) return [d.w];
+    const role = ROLES[m[1]];
+    if (!role.on(h)) return [];
+    const names = role.names(h);
+    if (names.length) return names.map(n => d.w.replace(m[0], n));
+    return [d.fb || d.w.replace(m[0], role.generic())];
+  }
+  function activeDictionary() {
+    const h = state.household;
+    const out = [];
+    DICTIONARY.concat(state.custom).forEach(d => {
+      if (!h.kidsOn && d.tags.includes('kodomo')) return;
+      expandWord(d, h).forEach(w => out.push({ w, tags: d.tags, custom: !!d.custom }));
+    });
+    return out;
+  }
+  const kazokuOn = () => { const h = state.household; return h.partnerOn || h.family.length > 0 || h.pets.length > 0; };
   const RECENT_MAX = 40;
 
   const DONE_WORDS = [
@@ -115,6 +169,28 @@
     'その一歩が、だいじ。',
     'ちゃんと歩いています。',
     'よし、次へ。',
+  ];
+  /* 全部できたときの見出し。夜は「おやすみ」系も混ざる */
+  const FINALE_TITLES = [
+    'きょうも、がんばってくれてありがとう。',
+    'おつかれさま。ここまで、ちゃんと来ました。',
+    'がんばったね。きょうの分は、おしまい。',
+    'ぜんぶ歩けました。もう休んでいい時間です。',
+    'きょうのあなたは、ちゃんと歩きました。',
+    'よくやりました。あとは、ゆっくり。',
+    'ひとつずつ、ぜんぶ。すごいことです。',
+    'きょうの道、ぜんぶ歩ききりました。',
+    'ここまで来たら、あとは自分の時間です。',
+    'だいじょうぶ、きょうはもう十分。',
+  ];
+  const FINALE_TITLES_NIGHT = [
+    'おやすみなさい。きょうも、いい一日でした。',
+    'おやすみ。がんばってくれて、ありがとう。',
+    'きょうはここまで。ゆっくり眠ってください。',
+  ];
+  const FINALE_TITLES_DAY = [
+    'ひと息つきましょう。きょうはもう、上がりです。',
+    'あとの時間は、好きに使っていい時間です。',
   ];
   const FINALE_SUB = [
     'きょうのあなたは、ちゃんと歩きました。',
@@ -129,6 +205,8 @@
     date: todayKey(),
     tasks: [],
     recent: [],
+    custom: [],
+    household: { kidsOn: true, kids: [], partnerOn: false, partnerName: '', family: [], pets: [] },
     settings: { theme: 'ai', appearance: 'system', celebrate: true, view: 'list' },
   });
 
@@ -166,6 +244,13 @@
     })) : [];
     if (typeof s.date !== 'string') s.date = todayKey();
     s.recent = Array.isArray(s.recent) ? s.recent.filter(x => typeof x === 'string').slice(0, RECENT_MAX) : [];
+    const names = a => Array.isArray(a) ? a.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, 20)).slice(0, 10) : [];
+    const h = Object.assign({}, base.household, (obj && obj.household) || {});
+    s.household = { kidsOn: h.kidsOn !== false, kids: names(h.kids), partnerOn: !!h.partnerOn, partnerName: String(h.partnerName || '').slice(0, 20), family: names(h.family), pets: names(h.pets) };
+    const groupIds = new Set(DICT_GROUPS.map(g => g.id));
+    s.custom = Array.isArray(s.custom) ? s.custom.filter(c => c && typeof c.w === 'string' && c.w.trim()).map(c => ({
+      w: c.w.trim().slice(0, 60), tags: (Array.isArray(c.tags) ? c.tags : []).filter(t => groupIds.has(t)), custom: true,
+    })).slice(0, 200) : [];
     return s;
   }
   function save() {
@@ -355,7 +440,7 @@
   function renderSuggest() {
     const seen = new Set();
     const words = [];
-    state.recent.concat(DICTIONARY.map(d => d.w)).forEach(w => { if (!seen.has(w)) { seen.add(w); words.push(w); } });
+    state.recent.concat(activeDictionary().map(d => d.w)).forEach(w => { if (!seen.has(w)) { seen.add(w); words.push(w); } });
     $('#suggestList').innerHTML = words.slice(0, 80).map(w => `<option value="${esc(w)}"></option>`).join('');
   }
   function findTask(id) { return state.tasks.find(t => t.id === id); }
@@ -449,6 +534,7 @@
   const settingsSheet = $('#settingsSheet');
   function openSettings() { paintSettings(); settingsSheet.showModal(); }
   function paintSettings() {
+    paintHousehold();
     $('#themePicker').innerHTML = THEMES.map(t => `
       <button type="button" class="theme-opt" data-theme="${t.id}" aria-pressed="${state.settings.theme === t.id}">
         <span class="theme-swatch"><i style="background:${t.light[1]}"></i><i style="background:${t.dark[1]}"></i></span>
@@ -500,10 +586,10 @@
   });
   $('#clearBtn').addEventListener('click', () => {
     if (!confirm('この端末に保存したデータをすべて消します。もとには戻せません。よいですか？')) return;
-    const keep = state.settings;
-    state = defaultState(); state.settings = keep;
+    const keep = { settings: state.settings, household: state.household, custom: state.custom };
+    state = Object.assign(defaultState(), keep);
     save(); render(); settingsSheet.close();
-    toast('すべて消しました。');
+    toast('きょうのやることを、すべて消しました。');
   });
 
   // 背景タップでシートを閉じる
@@ -512,26 +598,83 @@
   });
 
 
+
+  // ---------- くらしのかたち ----------
+  function nameListHtml(key, items, placeholder) {
+    return `
+      <div class="names" data-key="${key}">
+        ${items.map((n, i) => `<span class="name-chip">${esc(n)}<button type="button" class="name-x" data-idx="${i}" aria-label="「${esc(n)}」を消す">×</button></span>`).join('')}
+        ${items.length < 10 ? `<form class="name-add" data-key="${key}"><input type="text" maxlength="20" placeholder="${placeholder}" aria-label="${placeholder}"><button type="submit" class="chip">足す</button></form>` : ''}
+      </div>`;
+  }
+  function paintHousehold() {
+    const h = state.household;
+    $$('#kidsToggle .chip').forEach(c => c.setAttribute('aria-pressed', String((c.dataset.on === 'on') === h.kidsOn)));
+    $('#kidsNames').innerHTML = h.kidsOn ? nameListHtml('kids', h.kids, 'こどもの名前') : '';
+    $$('#partnerToggle .chip').forEach(c => c.setAttribute('aria-pressed', String((c.dataset.on === 'on') === h.partnerOn)));
+    $('#partnerName').hidden = !h.partnerOn;
+    $('#partnerNameInput').value = h.partnerName;
+    $('#familyNames').innerHTML = nameListHtml('family', h.family, '呼び名（母、父 など）');
+    $('#petNames').innerHTML = nameListHtml('pets', h.pets, 'ペットの名前');
+  }
+  function householdChanged() { save(); renderSuggest(); paintHousehold(); }
+  $('#kidsToggle').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    state.household.kidsOn = b.dataset.on === 'on'; householdChanged();
+  });
+  $('#partnerToggle').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    state.household.partnerOn = b.dataset.on === 'on'; householdChanged();
+  });
+  $('#partnerNameInput').addEventListener('change', e => {
+    state.household.partnerName = e.target.value.trim().slice(0, 20); save(); renderSuggest();
+  });
+  $('#household').addEventListener('submit', e => {
+    const f = e.target.closest('.name-add'); if (!f) return;
+    e.preventDefault();
+    const input = f.querySelector('input');
+    const v = input.value.trim().slice(0, 20);
+    if (!v) return;
+    const list = state.household[f.dataset.key];
+    if (!list.includes(v) && list.length < 10) list.push(v);
+    householdChanged();
+    const next = $(`.name-add[data-key="${f.dataset.key}"] input`); if (next) next.focus();
+  });
+  $('#household').addEventListener('click', e => {
+    const x = e.target.closest('.name-x'); if (!x) return;
+    const key = x.closest('.names').dataset.key;
+    state.household[key].splice(Number(x.dataset.idx), 1);
+    householdChanged();
+  });
+
   // ---------- よく使うことば ----------
   const dictSheet = $('#dictSheet');
   const dictSel = { mine: false, time: null, scene: null };
   function openDict() {
     dictSel.mine = false; dictSel.time = null; dictSel.scene = null;
+    customTags = []; paintCustomTags();
     paintDict();
     dictSheet.showModal();
   }
+  $('#dictToSettings').addEventListener('click', () => { dictSheet.close(); openSettings(); });
   function dictWords() {
     if (dictSel.mine) return state.recent;
-    return DICTIONARY
+    const seen = new Set();
+    return activeDictionary()
       .filter(d => (!dictSel.time || d.tags.includes(dictSel.time)) && (!dictSel.scene || d.tags.includes(dictSel.scene)))
-      .map(d => d.w);
+      .map(d => d.w)
+      .filter(w => !seen.has(w) && seen.add(w));
+  }
+  function visibleScenes() {
+    return DICT_SCENE.filter(g => (g.id !== 'kodomo' || state.household.kidsOn) && (g.id !== 'kazoku' || kazokuOn() || state.custom.some(c => c.tags.includes('kazoku'))));
   }
   function paintDict() {
     const chip = (g, kind, on) => `<button type="button" class="dict-tab" data-kind="${kind}" data-id="${g.id}" aria-pressed="${on}">${g.name}</button>`;
     $('#dictMine').setAttribute('aria-pressed', String(dictSel.mine));
     $('#dictMineCount').textContent = state.recent.length ? state.recent.length : '';
     $('#dictTimeRow').innerHTML = DICT_TIME.map(g => chip(g, 'time', !dictSel.mine && dictSel.time === g.id)).join('');
-    $('#dictSceneRow').innerHTML = DICT_SCENE.map(g => chip(g, 'scene', !dictSel.mine && dictSel.scene === g.id)).join('');
+    if (dictSel.scene && !visibleScenes().some(g => g.id === dictSel.scene)) dictSel.scene = null;
+    $('#dictSceneRow').innerHTML = visibleScenes().map(g => chip(g, 'scene', !dictSel.mine && dictSel.scene === g.id)).join('');
     $('#dictFilters').classList.toggle('is-muted', dictSel.mine);
 
     const words = dictWords();
@@ -545,11 +688,40 @@
 
     let empty;
     if (dictSel.mine) empty = '自分で入れたことばが、ここにたまっていきます。';
-    else empty = 'この組み合わせには、まだことばがありません。片方をはずしてみてください。';
+    else empty = 'この組み合わせには、まだことばがありません。片方をはずすか、下から足してみてください。';
+    const customSet = new Set(state.custom.map(c => c.w));
+    const wordHtml = w => `<span class="word-wrap"><button type="button" class="word ${customSet.has(w) ? 'is-custom' : ''}" data-word="${esc(w)}" aria-pressed="${hasToday(w)}">${esc(w)}</button>${customSet.has(w) && !dictSel.mine ? `<button type="button" class="word-x" data-remove="${esc(w)}" aria-label="「${esc(w)}」を辞書から消す">×</button>` : ''}</span>`;
     $('#dictBody').innerHTML = words.length
-      ? `<div class="dict-words">${words.map(w => `<button type="button" class="word" data-word="${esc(w)}" aria-pressed="${hasToday(w)}">${esc(w)}</button>`).join('')}</div>`
+      ? `<div class="dict-words">${words.map(wordHtml).join('')}</div>`
       : `<p class="word-empty">${empty}</p>`;
+    $('#customForm').hidden = dictSel.mine;
   }
+  // ことばを足す（タグは「いつ」「なに」からいくつでも）
+  function paintCustomTags() {
+    const selT = new Set(customTags);
+    $('#customTags').innerHTML = DICT_TIME.concat(DICT_SCENE).map(g => `<button type="button" class="dict-tab small" data-tag="${g.id}" aria-pressed="${selT.has(g.id)}">${g.name}</button>`).join('');
+  }
+  let customTags = [];
+  $('#customTags').addEventListener('click', e => {
+    const b = e.target.closest('[data-tag]'); if (!b) return;
+    const t = b.dataset.tag;
+    customTags = customTags.includes(t) ? customTags.filter(x => x !== t) : customTags.concat([t]);
+    paintCustomTags();
+  });
+  $('#customForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const input = $('#customWord');
+    const w = input.value.trim().slice(0, 60);
+    if (!w) return;
+    const tags = customTags.length ? customTags.slice() : [dictSel.time, dictSel.scene].filter(Boolean);
+    if (!state.custom.some(c => c.w === w)) state.custom.push({ w, tags, custom: true });
+    else state.custom = state.custom.map(c => c.w === w ? { w, tags, custom: true } : c);
+    save(); renderSuggest();
+    input.value = ''; customTags = []; paintCustomTags();
+    if (tags.length && !(dictSel.time && tags.includes(dictSel.time)) && !(dictSel.scene && tags.includes(dictSel.scene))) { dictSel.time = null; dictSel.scene = null; }
+    paintDict();
+    toast(`「${w}」を辞書に足しました。`);
+  });
   $('#dictMine').addEventListener('click', () => { dictSel.mine = !dictSel.mine; paintDict(); });
   $('#dictFilters').addEventListener('click', e => {
     const b = e.target.closest('.dict-tab'); if (!b) return;
@@ -559,6 +731,14 @@
     paintDict();
   });
   $('#dictBody').addEventListener('click', e => {
+    const x = e.target.closest('.word-x');
+    if (x) {
+      const w = x.dataset.remove;
+      if (!confirm(`「${w}」を辞書から消しますか？`)) return;
+      state.custom = state.custom.filter(c => c.w !== w);
+      save(); renderSuggest(); paintDict();
+      return;
+    }
     const b = e.target.closest('.word'); if (!b) return;
     const w = b.dataset.word;
     if (hasToday(w)) { toast('もう置いてあります。'); return; }
@@ -690,6 +870,9 @@
   function finale() {
     const dlg = $('#finale');
     if (dlg.open) return;
+    const hour = new Date().getHours();
+    const pool = FINALE_TITLES.concat(hour >= 19 || hour < 4 ? FINALE_TITLES_NIGHT : FINALE_TITLES_DAY);
+    $('#finaleTitle').textContent = pool[Math.floor(Math.random() * pool.length)];
     $('#finaleSub').textContent = FINALE_SUB[Math.floor(Math.random() * FINALE_SUB.length)];
     dlg.showModal();
     if (state.settings.celebrate && !reduceMotion()) {

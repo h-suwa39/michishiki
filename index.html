@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#f5f7fb">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="みちしき">
@@ -157,55 +158,92 @@
     <div class="sheet-handle" aria-hidden="true"></div>
     <h3 id="settingsTitle" class="sheet-title">設定</h3>
 
-    <fieldset class="field" id="household">
-      <legend class="field-label">くらしのかたち</legend>
-      <p class="field-help">「よく使うことば」の中身が、あなたの家に合わせて変わります。名前を入れると「はなの検温」のように人数分に増えます。名前は入れなくても大丈夫です。</p>
-      <div class="hh-row">
-        <span class="hh-label">こども</span>
-        <div class="chips" id="kidsToggle"><button type="button" class="chip" data-on="on">いる</button><button type="button" class="chip" data-on="off">いない</button></div>
-      </div>
-      <div id="kidsNames"></div>
-      <div class="hh-row">
-        <span class="hh-label">パートナー</span>
-        <div class="chips" id="partnerToggle"><button type="button" class="chip" data-on="on">いる</button><button type="button" class="chip" data-on="off">いない</button></div>
-      </div>
-      <div class="name-add" id="partnerName" hidden><input type="text" id="partnerNameInput" maxlength="20" placeholder="呼び方（夫、妻、名前 など）" aria-label="パートナーの呼び方"></div>
-      <div class="hh-row"><span class="hh-label">同居の家族</span></div>
-      <div id="familyNames"></div>
-      <div class="hh-row"><span class="hh-label">ペット</span></div>
-      <div id="petNames"></div>
-    </fieldset>
+    <div class="tabs" id="settingsTabs" role="tablist">
+      <button type="button" role="tab" class="tab" data-tab="color" aria-selected="true">カラーテーマ</button>
+      <button type="button" role="tab" class="tab" data-tab="my" aria-selected="false">マイカスタマイズ</button>
+      <button type="button" role="tab" class="tab" data-tab="dict" aria-selected="false">辞書</button>
+    </div>
 
-    <fieldset class="field">
-      <legend class="field-label">色のテーマ</legend>
-      <div class="theme-picker" id="themePicker"></div>
-    </fieldset>
+    <!-- カラーテーマ -->
+    <div class="tab-panel" data-panel="color">
+      <fieldset class="field">
+        <legend class="field-label">色のテーマ</legend>
+        <div class="theme-picker" id="themePicker"></div>
+      </fieldset>
+      <fieldset class="field">
+        <legend class="field-label">外観</legend>
+        <div class="chips" id="appearancePicker">
+          <button type="button" class="chip" data-appearance="system">端末にあわせる</button>
+          <button type="button" class="chip" data-appearance="light">明るい</button>
+          <button type="button" class="chip" data-appearance="dark">暗い</button>
+        </div>
+      </fieldset>
+      <fieldset class="field">
+        <legend class="field-label">できたときの演出</legend>
+        <div class="chips" id="celebratePicker">
+          <button type="button" class="chip" data-celebrate="on">あり</button>
+          <button type="button" class="chip" data-celebrate="off">なし</button>
+        </div>
+      </fieldset>
+    </div>
 
-    <fieldset class="field">
-      <legend class="field-label">外観</legend>
-      <div class="chips" id="appearancePicker">
-        <button type="button" class="chip" data-appearance="system">端末にあわせる</button>
-        <button type="button" class="chip" data-appearance="light">明るい</button>
-        <button type="button" class="chip" data-appearance="dark">暗い</button>
-      </div>
-    </fieldset>
+    <!-- マイカスタマイズ -->
+    <div class="tab-panel" data-panel="my" hidden>
+      <fieldset class="field" id="household">
+        <legend class="field-label">くらしのかたち</legend>
+        <p class="field-help">家のかたちは人それぞれ。ここで選んだものに合わせて「よく使うことば」の中身が変わります。名前や呼び方を入れると「はなの検温」のように増えます。入れなくても大丈夫です。</p>
 
-    <fieldset class="field">
-      <legend class="field-label">できたときの演出</legend>
-      <div class="chips" id="celebratePicker">
-        <button type="button" class="chip" data-celebrate="on">あり</button>
-        <button type="button" class="chip" data-celebrate="off">なし</button>
-      </div>
-    </fieldset>
+        <div class="hh-block">
+          <div class="hh-row">
+            <span class="hh-label">こども</span>
+            <div class="chips" id="kidsToggle"><button type="button" class="chip" data-on="on">いる</button><button type="button" class="chip" data-on="off">いない</button></div>
+          </div>
+          <div id="kidsNames"></div>
+        </div>
 
-    <fieldset class="field">
+        <div class="hh-block">
+          <div class="hh-row">
+            <span class="hh-label">パートナー</span>
+            <div class="chips" id="partnerToggle"><button type="button" class="chip" data-on="on">いる</button><button type="button" class="chip" data-on="off">いない</button></div>
+          </div>
+          <div id="partnerBox" hidden>
+            <p class="field-help">呼び方を選ぶか、自由に書いてください。</p>
+            <div class="chips" id="partnerQuick"></div>
+            <div class="name-add"><input type="text" id="partnerNameInput" maxlength="20" placeholder="ほかの呼び方・名前" aria-label="パートナーの呼び方"><button type="button" class="chip" id="partnerNameSet">決める</button></div>
+          </div>
+        </div>
+
+        <div class="hh-block">
+          <div class="hh-row"><span class="hh-label">同居の家族</span></div>
+          <div class="chips" id="familyQuick"></div>
+          <div id="familyNames"></div>
+        </div>
+
+        <div class="hh-block">
+          <div class="hh-row"><span class="hh-label">ペット</span></div>
+          <div id="petNames"></div>
+        </div>
+      </fieldset>
+    </div>
+
+    <!-- 辞書 -->
+    <div class="tab-panel" data-panel="dict" hidden>
+      <fieldset class="field">
+        <legend class="field-label">じぶんで足したことば</legend>
+        <p class="field-help">「よく使うことば」の下の欄から足したことばです。グループのタグは、あさ・ひる・よる・ときどき と、なに の組み合わせです。</p>
+        <div id="customList"></div>
+        <div class="chips"><button type="button" class="chip" id="settingsToDict">よく使うことばを開く</button></div>
+      </fieldset>
+    </div>
+
+    <fieldset class="field data-block">
       <legend class="field-label">データ</legend>
       <p class="field-help">データはこの端末のブラウザの中にだけ保存されます。サーバーには送りません。ブラウザのデータを消すと一緒に消えるので、ときどき書き出しておくと安心です。</p>
       <div class="chips">
         <button type="button" class="chip" id="exportBtn">ファイルに書き出す</button>
         <button type="button" class="chip" id="importBtn">ファイルから読み込む</button>
         <input type="file" id="importFile" accept="application/json,.json" hidden>
-        <button type="button" class="chip chip-danger" id="clearBtn">すべて消す</button>
+        <button type="button" class="chip chip-danger" id="clearBtn">きょうのやることを消す</button>
       </div>
     </fieldset>
 

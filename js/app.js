@@ -50,6 +50,8 @@
     'かぞく':     { key: 'family',  on: h => h.family.length > 0, names: h => h.family, generic: () => '家族' },
     'ペット':     { key: 'pets',    on: h => h.pets.length > 0,   names: h => h.pets,   generic: () => 'ペット' },
   };
+  const PARTNER_QUICK = ['夫', '妻', '彼氏', '彼女', 'パートナー', '相方', 'だんな', 'つま'];
+  const FAMILY_QUICK = ['母', '父', '義母', '義父', '祖母', '祖父', '姉', '兄', '妹', '弟'];
   const PH_RE = /\{(こども|パートナー|かぞく|ペット)\}/;
 
   const W = (w, ...tags) => {
@@ -532,9 +534,24 @@
 
   // ---------- 設定シート ----------
   const settingsSheet = $('#settingsSheet');
-  function openSettings() { paintSettings(); settingsSheet.showModal(); }
+  let settingsTab = 'color';
+  function openSettings(tab) {
+    if (tab) settingsTab = tab;
+    paintSettings(); settingsSheet.showModal();
+  }
+  function paintTabs() {
+    $$('#settingsTabs .tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === settingsTab)));
+    $$('.tab-panel').forEach(p => { p.hidden = p.dataset.panel !== settingsTab; });
+  }
+  $('#settingsTabs').addEventListener('click', e => {
+    const t = e.target.closest('.tab'); if (!t) return;
+    settingsTab = t.dataset.tab; paintTabs();
+  });
+  $('#settingsToDict').addEventListener('click', () => { settingsSheet.close(); openDict(); });
   function paintSettings() {
+    paintTabs();
     paintHousehold();
+    paintCustomList();
     $('#themePicker').innerHTML = THEMES.map(t => `
       <button type="button" class="theme-opt" data-theme="${t.id}" aria-pressed="${state.settings.theme === t.id}">
         <span class="theme-swatch"><i style="background:${t.light[1]}"></i><i style="background:${t.dark[1]}"></i></span>
@@ -585,7 +602,7 @@
     }
   });
   $('#clearBtn').addEventListener('click', () => {
-    if (!confirm('この端末に保存したデータをすべて消します。もとには戻せません。よいですか？')) return;
+    if (!confirm('きょうのやることをすべて消します。カラーテーマ・くらしのかたち・辞書は残ります。よいですか？')) return;
     const keep = { settings: state.settings, household: state.household, custom: state.custom };
     state = Object.assign(defaultState(), keep);
     save(); render(); settingsSheet.close();
@@ -598,6 +615,25 @@
   });
 
 
+
+  function paintCustomList() {
+    const nameOf = id => (DICT_GROUPS.find(g => g.id === id) || {}).name || id;
+    $('#customList').innerHTML = state.custom.length
+      ? `<div class="custom-list">${state.custom.map(c => `
+          <div class="custom-item">
+            <b>${esc(c.w)}</b>
+            <span class="tags">${c.tags.map(t => `<span class="tag">${esc(nameOf(t))}</span>`).join('')}</span>
+            <button type="button" class="word-x" data-remove="${esc(c.w)}" aria-label="「${esc(c.w)}」を辞書から消す">×</button>
+          </div>`).join('')}</div>`
+      : `<p class="word-empty">まだありません。「よく使うことば」の下の欄から足せます。</p>`;
+  }
+  $('#customList').addEventListener('click', e => {
+    const x = e.target.closest('.word-x'); if (!x) return;
+    const w = x.dataset.remove;
+    if (!confirm(`「${w}」を辞書から消しますか？`)) return;
+    state.custom = state.custom.filter(c => c.w !== w);
+    save(); renderSuggest(); paintCustomList();
+  });
 
   // ---------- くらしのかたち ----------
   function nameListHtml(key, items, placeholder) {
@@ -612,9 +648,12 @@
     $$('#kidsToggle .chip').forEach(c => c.setAttribute('aria-pressed', String((c.dataset.on === 'on') === h.kidsOn)));
     $('#kidsNames').innerHTML = h.kidsOn ? nameListHtml('kids', h.kids, 'こどもの名前') : '';
     $$('#partnerToggle .chip').forEach(c => c.setAttribute('aria-pressed', String((c.dataset.on === 'on') === h.partnerOn)));
-    $('#partnerName').hidden = !h.partnerOn;
-    $('#partnerNameInput').value = h.partnerName;
-    $('#familyNames').innerHTML = nameListHtml('family', h.family, '呼び名（母、父 など）');
+    $('#partnerBox').hidden = !h.partnerOn;
+    const quick = PARTNER_QUICK.includes(h.partnerName) || !h.partnerName ? PARTNER_QUICK : PARTNER_QUICK.concat([h.partnerName]);
+    $('#partnerQuick').innerHTML = quick.map(n => `<button type="button" class="chip" data-name="${esc(n)}" aria-pressed="${h.partnerName === n}">${esc(n)}</button>`).join('');
+    $('#partnerNameInput').value = PARTNER_QUICK.includes(h.partnerName) ? '' : h.partnerName;
+    $('#familyQuick').innerHTML = FAMILY_QUICK.filter(n => !h.family.includes(n)).map(n => `<button type="button" class="chip small" data-name="${esc(n)}">＋ ${esc(n)}</button>`).join('');
+    $('#familyNames').innerHTML = nameListHtml('family', h.family, 'ほかの呼び名・名前');
     $('#petNames').innerHTML = nameListHtml('pets', h.pets, 'ペットの名前');
   }
   function householdChanged() { save(); renderSuggest(); paintHousehold(); }
@@ -626,8 +665,22 @@
     const b = e.target.closest('.chip'); if (!b) return;
     state.household.partnerOn = b.dataset.on === 'on'; householdChanged();
   });
-  $('#partnerNameInput').addEventListener('change', e => {
-    state.household.partnerName = e.target.value.trim().slice(0, 20); save(); renderSuggest();
+  $('#partnerQuick').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    state.household.partnerName = b.dataset.name; householdChanged();
+  });
+  const setPartnerName = () => {
+    const v = $('#partnerNameInput').value.trim().slice(0, 20);
+    if (!v) return;
+    state.household.partnerName = v; householdChanged();
+  };
+  $('#partnerNameSet').addEventListener('click', setPartnerName);
+  $('#partnerNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); setPartnerName(); } });
+  $('#familyQuick').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    const list = state.household.family;
+    if (!list.includes(b.dataset.name) && list.length < 10) list.push(b.dataset.name);
+    householdChanged();
   });
   $('#household').addEventListener('submit', e => {
     const f = e.target.closest('.name-add'); if (!f) return;
@@ -656,7 +709,7 @@
     paintDict();
     dictSheet.showModal();
   }
-  $('#dictToSettings').addEventListener('click', () => { dictSheet.close(); openSettings(); });
+  $('#dictToSettings').addEventListener('click', () => { dictSheet.close(); openSettings('my'); });
   function dictWords() {
     if (dictSel.mine) return state.recent;
     const seen = new Set();

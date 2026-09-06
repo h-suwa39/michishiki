@@ -510,11 +510,12 @@ body.wide .composer-inner { width: min(100%, 1000px); }
 .set-empty { color: var(--muted); font-size: 14px; margin: 4px 0; }
 
 /* 設定のメニュー */
-.tabs { display: flex; gap: 4px; background: var(--panel-2); border-radius: 999px; padding: 4px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; background: var(--panel-2); border-radius: 999px; padding: 4px; }
 .tab {
-  flex: 1; padding: 8px 6px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted);
+  flex: 1; padding: 8px 4px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted);
   transition: background-color .2s, color .2s; white-space: nowrap;
 }
+@media (max-width: 420px) { .tab { font-size: 12px; padding: 8px 2px; } }
 .tab[aria-selected="true"] { background: var(--panel); color: var(--text); box-shadow: 0 2px 8px -4px rgba(0,0,0,.35); }
 .tab-panel { display: grid; gap: 18px; }
 .data-block { border-top: 1px solid var(--border); padding-top: 14px; }

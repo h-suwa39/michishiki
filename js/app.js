@@ -233,7 +233,7 @@
     sets: [],
     dictOff: DEFAULT_OFF(),
     household: { kidsOn: true, kids: [], partnerOn: false, partnerName: '', family: [], pets: [] },
-    settings: { theme: 'ai', appearance: 'system', celebrate: true, view: 'list', dayStart: 4 },
+    settings: { theme: 'ai', appearance: 'system', celebrate: true, view: 'list', dayStart: 4, autoReset: true },
   });
 
   let state = load();
@@ -261,6 +261,7 @@
     if (!['system', 'light', 'dark'].includes(s.settings.appearance)) s.settings.appearance = 'system';
     if (!['list', 'quad'].includes(s.settings.view)) s.settings.view = 'list';
     s.settings.celebrate = s.settings.celebrate !== false;
+    s.settings.autoReset = s.settings.autoReset !== false;
     s.settings.dayStart = Number.isInteger(s.settings.dayStart) && s.settings.dayStart >= 0 && s.settings.dayStart <= 23 ? s.settings.dayStart : 4;
     s.tasks = Array.isArray(s.tasks) ? s.tasks.filter(t => t && typeof t.title === 'string').map(t => ({
       id: String(t.id || uid()),
@@ -311,9 +312,13 @@
   function rollover() {
     const today = todayKey();
     if (state.date === today) return;
-    const remaining = state.tasks.filter(t => !t.done).map(t => t.repeat ? Object.assign({}, t, { count: 0 }) : t);
-    carried = remaining.length;
-    state.tasks = remaining;
+    if (state.settings.autoReset) {
+      const remaining = state.tasks.filter(t => !t.done).map(t => t.repeat ? Object.assign({}, t, { count: 0 }) : t);
+      carried = remaining.length;
+      state.tasks = remaining;
+    } else {
+      carried = 0;   // 手ばなさない：できた分も回数もそのまま
+    }
     state.date = today;
     const placed = applySetsForToday();
     save();
@@ -765,6 +770,7 @@
     paintHousehold();
     paintCustomList();
     paintWordToggles();
+    paintSets();
     $('#themePicker').innerHTML = THEMES.map(t => `
       <button type="button" class="theme-opt" data-theme="${t.id}" aria-pressed="${state.settings.theme === t.id}">
         <span class="theme-swatch"><i style="background:${t.light[1]}"></i><i style="background:${t.dark[1]}"></i></span>
@@ -815,6 +821,14 @@
       toast('このファイルは読み込めませんでした。');
     }
   });
+  $('#releaseBtn').addEventListener('click', async () => {
+    const done = state.tasks.filter(t => t.done).length;
+    if (!done) { toast('できた分は、まだありません。'); return; }
+    if (!(await ask({ title: `できた ${done} 件を手ばなしますか？`, text: 'まだのものと、くりかえしの回数はそのままです。', ok: '手ばなす' }))) return;
+    state.tasks = state.tasks.filter(t => !t.done);
+    save(); render(); settingsSheet.close();
+    toast(`${done} 件を手ばなしました。`);
+  });
   $('#clearBtn').addEventListener('click', async () => {
     if (!(await ask({ title: 'きょうのやることを、すべて消しますか？', text: 'カラーテーマ・くらしのかたち・辞書・いつものセットは残ります。', ok: '消す', danger: true }))) return;
     const keep = { settings: state.settings, household: state.household, custom: state.custom, sets: state.sets, recent: state.recent, dictOff: state.dictOff };
@@ -824,7 +838,7 @@
   });
 
   // 背景タップでシートを閉じる
-  [taskSheet, settingsSheet, $('#dictSheet'), $('#setsSheet'), $('#finale')].forEach(d => {
+  [taskSheet, settingsSheet, $('#dictSheet'), $('#finale')].forEach(d => {
     d.addEventListener('click', e => { if (e.target === d) d.close(); });
   });
 
@@ -912,6 +926,7 @@
   function paintHousehold() {
     const h = state.household;
     $$('#dayStartPicker .chip').forEach(c => c.setAttribute('aria-pressed', String(Number(c.dataset.h) === state.settings.dayStart)));
+    $$('#autoResetPicker .chip').forEach(c => c.setAttribute('aria-pressed', String((c.dataset.reset === 'on') === state.settings.autoReset)));
     $$('#kidsToggle .chip').forEach(c => c.setAttribute('aria-pressed', String((c.dataset.on === 'on') === h.kidsOn)));
     $('#kidsNames').innerHTML = h.kidsOn ? nameListHtml('kids', h.kids, 'こどもの名前') : '';
     $$('#partnerToggle .chip').forEach(c => c.setAttribute('aria-pressed', String((c.dataset.on === 'on') === h.partnerOn)));
@@ -924,6 +939,11 @@
     $('#petNames').innerHTML = nameListHtml('pets', h.pets, 'ペットの名前');
   }
   function householdChanged() { save(); renderSuggest(); paintHousehold(); }
+  $('#autoResetPicker').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    state.settings.autoReset = b.dataset.reset === 'on'; save(); paintHousehold();
+    toast(state.settings.autoReset ? '切りかわりで、できた分を手ばなします。' : '切りかわっても、そのまま残します。');
+  });
   $('#dayStartPicker').addEventListener('click', e => {
     const b = e.target.closest('.chip'); if (!b) return;
     state.settings.dayStart = Number(b.dataset.h); dayStartHour = state.settings.dayStart;
@@ -976,14 +996,12 @@
 
 
   // ---------- いつものセット ----------
-  const setsSheet = $('#setsSheet');
   const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
   let newSetDays = [];
   function openSets() {
     newSetDays = [];
     $('#setName').value = '';
-    paintSets();
-    setsSheet.showModal();
+    openSettings('sets');
   }
   function daysHtml(days, attr) {
     const today = appDate().getDay();
@@ -1015,7 +1033,6 @@
       : 'きょうの一覧に「まだ」のものが無いので、先にやることを置いてください。';
   }
   $('#setsBtn').addEventListener('click', openSets);
-  $('#setsClose').addEventListener('click', () => setsSheet.close());
   $('#setNameQuick').addEventListener('click', e => {
     const b = e.target.closest('.chip'); if (!b) return;
     $('#setName').value = b.dataset.name;

@@ -255,11 +255,13 @@
             <button type="button" class="chip small" data-h="6">6時</button>
             <button type="button" class="chip small" data-h="7">7時</button>
           </div>
-          <p class="field-help">切りかわったときに、できた分をどうするか。</p>
-          <div class="chips" id="autoResetPicker">
-            <button type="button" class="chip small" data-reset="on">手ばなす（おすすめ）</button>
-            <button type="button" class="chip small" data-reset="off">手ばなさない</button>
+          <p class="field-help">切りかわったときに、どうするか。</p>
+          <div class="chips" id="dayModePicker">
+            <button type="button" class="chip small" data-mode="reset">手ばなす（おすすめ）</button>
+            <button type="button" class="chip small" data-mode="keep">手ばなさない</button>
+            <button type="button" class="chip small" data-mode="none">なにもしない</button>
           </div>
+          <p class="field-help"><b>手ばなす</b>：1回きりのできた分を消す。くりかえしは毎日のことなので、まだに戻して回数 0 で残る。曜日のセットを置く。<br><b>手ばなさない</b>：やることはそのまま。曜日のセットだけ置く。<br><b>なにもしない</b>：日付が進むだけ。セットも置かない。</p>
         </div>
       </fieldset>
     </div>

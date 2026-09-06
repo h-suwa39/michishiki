@@ -317,11 +317,9 @@
     if (state.date === today) return;
     const mode = state.settings.dayMode;
     if (mode === 'reset') {
-      // 1回きりのできた分は手ばなす。くりかえしは毎日のことなので、まだに戻して回数 0 で残す
-      const remaining = state.tasks
-        .filter(t => !t.done || t.repeat)
-        .map(t => t.repeat ? Object.assign({}, t, { done: false, doneAt: null, count: 0 }) : t);
-      carried = remaining.filter(t => !t.repeat).length;
+      // できた分は手ばなす（くりかえしも同じ）。まだの分は持ち越し、くりかえしの回数は 0 に
+      const remaining = state.tasks.filter(t => !t.done).map(t => t.repeat ? Object.assign({}, t, { count: 0 }) : t);
+      carried = remaining.length;
       state.tasks = remaining;
     } else {
       carried = 0;   // 手ばなさない／なにもしない：できた分も回数もそのまま

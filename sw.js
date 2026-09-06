@@ -1,17 +1,24 @@
 /* みちしき — Service Worker
-   アプリ本体をキャッシュして、オフラインでも開けるようにする。
-   フォントなど外部のものはネットワーク優先で、失敗したらキャッシュを使う。 */
-const CACHE = 'michishiki-v2';
+   アプリ本体はネット優先で、開くたびに最新を取る。ネットが無いときだけキャッシュを使う。
+   VERSION を上げると新しい Service Worker として入れ替わり、古いキャッシュを捨てる。 */
+const VERSION = '0.6.1';
+const CACHE = 'michishiki-' + VERSION;
 const CORE = ['./', './index.html', './css/style.css', './js/app.js', './manifest.webmanifest', './icons/icon.svg'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => Promise.all(CORE.map(u => fetch(u, { cache: 'reload' }).then(r => r.ok && c.put(u, r)).catch(() => {}))))
+      .then(() => self.skipWaiting())
+  );
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())
+  );
 });
+self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipWaiting(); });
 
-/* 応答の複製は、本体を読まれる前に同期で取っておく（あとから clone すると失敗する） */
 function putLater(req, res) {
   if (!res || !res.ok) return;
   const copy = res.clone();
@@ -23,14 +30,10 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (!url.protocol.startsWith('http')) return;
-  const sameOrigin = url.origin === location.origin;
-  if (sameOrigin) {
-    // 本体はキャッシュ優先、裏で更新
-    e.respondWith(caches.match(req).then(hit => {
-      const fetching = fetch(req).then(res => { putLater(req, res); return res; }).catch(() => hit);
-      return hit || fetching;
-    }));
-  } else {
-    e.respondWith(fetch(req).then(res => { putLater(req, res); return res; }).catch(() => caches.match(req)));
-  }
+  // 本体も外部（フォントなど）も、ネット優先。取れなければキャッシュ
+  e.respondWith(
+    fetch(req, { cache: 'no-cache' })
+      .then(res => { putLater(req, res); return res; })
+      .catch(() => caches.match(req).then(hit => hit || (req.mode === 'navigate' ? caches.match('./index.html') : undefined)))
+  );
 });

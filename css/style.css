@@ -643,6 +643,8 @@ dialog::backdrop { background: rgba(20, 24, 40, .35); backdrop-filter: blur(2px)
 .about { border-top: 1px solid var(--border); padding-top: 14px; font-size: 13px; color: var(--muted); display: grid; gap: 6px; }
 .about p { margin: 0; }
 .about b { color: var(--text); font-family: var(--font-display); }
+.about-version { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.about-version small { flex-basis: 100%; }
 
 /* ---------- 全部できた ---------- */
 .finale {

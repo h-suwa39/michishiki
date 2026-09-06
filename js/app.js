@@ -6,7 +6,8 @@
   'use strict';
 
   const STORAGE_KEY = 'michishiki.v1';
-  const VERSION = 1;
+  const VERSION = 1;            // 保存データの形式
+  const APP_VERSION = '0.6.1';  // 表示用。sw.js の VERSION と合わせる
 
   const THEMES = [
     { id: 'ai',      name: 'あい',     light: ['#f4f6fb', '#5c6fb1'], dark: ['#121826', '#8b9ce0'] },
@@ -1477,6 +1478,7 @@
   syncViewport();
 
   // ---------- 起動 ----------
+  try { if (location.search.includes('r=')) history.replaceState(null, '', location.pathname); } catch (e) {}
   applyTheme();
   rollover();
   render();
@@ -1486,9 +1488,35 @@
   });
   setInterval(() => { if (state.date !== todayKey()) { rollover(); render(); } }, 60 * 1000);
 
+  // ---------- アプリの更新 ----------
+  $('#appVersion').textContent = 'v' + APP_VERSION;
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    let hadController = !!navigator.serviceWorker.controller;
     addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => { /* オフライン対応はあくまで補助 */ });
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        // 開き直したときに新しい版を確認する
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+        setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+      }).catch(() => { /* オフライン対応はあくまで補助 */ });
     });
+    // 新しい Service Worker に切りかわったら、一度だけ読み直して最新の画面にする
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController) { hadController = true; return; }
+      try { sessionStorage.setItem('michishiki.updated', '1'); } catch (e) {}
+      location.reload();
+    });
+    try {
+      if (sessionStorage.getItem('michishiki.updated')) { sessionStorage.removeItem('michishiki.updated'); setTimeout(() => toast(`新しい版（v${APP_VERSION}）になりました。`), 600); }
+    } catch (e) {}
   }
+  // 設定の「アプリを更新する」：キャッシュと Service Worker を捨てて読み直す。やること・設定は消えない
+  $('#updateBtn').addEventListener('click', async () => {
+    toast('更新しています…');
+    try {
+      if ('caches' in window) { const keys = await caches.keys(); await Promise.all(keys.map(k => caches.delete(k))); }
+      if ('serviceWorker' in navigator) { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); }
+    } catch (e) { /* 失敗しても読み直しはする */ }
+    const u = new URL(location.href); u.searchParams.set('r', String(Date.now()));
+    location.replace(u.toString());
+  });
 })();

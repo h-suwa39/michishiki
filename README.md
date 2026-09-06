@@ -67,7 +67,7 @@ Pages で公開する場合は、Framework preset を None、Build output direct
 
 - HTML / CSS / JavaScript のみ。ビルド不要・ライブラリ不要・サーバー不要
 - 見出しの書体に [Zen Maru Gothic](https://fonts.google.com/specimen/Zen+Maru+Gothic)（Google Fonts）を使用。読み込めない環境では端末の丸ゴシック系、ゴシック系に順に落ちます
-- Service Worker でアプリ本体をキャッシュ（オフライン起動）
+- Service Worker でアプリ本体をキャッシュ（オフライン起動）。本体はネット優先で、開くたびに最新を取る。公開時は `sw.js` の `VERSION` と `js/app.js` の `APP_VERSION` を上げる
 - ホスティングは Cloudflare（Workers の静的アセット配信。Pages でも可）
 
 設計の背景は [docs/CONCEPT.md](docs/CONCEPT.md)、変更点は [CHANGELOG.md](CHANGELOG.md) を参照してください。

@@ -315,6 +315,9 @@
   function rollover() {
     const today = todayKey();
     if (state.date === today) return;
+    // 切りかわり時刻の変更などで「きょう」が前の日付に戻ることがある。そのときは何もしない
+    // （戻った状態で手ばなすと、同じ日に 2 回手ばなしてしまう）
+    if (today < state.date) return;
     const mode = state.settings.dayMode;
     if (mode === 'reset') {
       // できた分は手ばなす（くりかえしも同じ）。まだの分は持ち越し、くりかえしの回数は 0 に
